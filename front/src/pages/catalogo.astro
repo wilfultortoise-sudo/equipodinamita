@@ -1,0 +1,1150 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { fetchCatalogData } from '../services/productsData.js';
+
+const pageTitle = "Catálogo de Libros — BiblioTech Store";
+const { categorias, productos } = await fetchCatalogData();
+---
+
+<BaseLayout pageTitle={pageTitle}>
+  <div class="catalog-page">
+    <div class="container">
+      
+      <!-- Encabezado del Catálogo -->
+      <div class="catalog-hero">
+        <div class="catalog-hero__text">
+          <h1>Explora Nuestra Colección</h1>
+          <p>Encuentra las mejores obras literarias, ciencia ficción, thrillers y desarrollo profesional.</p>
+        </div>
+        
+        <!-- Barra de Búsqueda Rápida -->
+        <div class="search-box">
+          <span class="search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>
+          <input 
+            type="text" 
+            id="catalog-search-input" 
+            class="search-input" 
+            placeholder="Buscar por título, autor o palabra clave..." 
+            autocomplete="off"
+          />
+          <button id="clear-search-btn" class="clear-btn" style="display: none;" title="Limpiar búsqueda">✕</button>
+        </div>
+      </div>
+
+      <div class="catalog-layout">
+        
+        <!-- Panel Lateral de Filtros (Hugo - Paso 3) -->
+        <aside class="catalog-sidebar">
+          <div class="card filter-card">
+            <div class="filter-header">
+              <h3>Filtros</h3>
+              <button id="reset-filters-btn" class="btn-text">Restablecer</button>
+            </div>
+
+            <!-- Filtro de Categorías -->
+            <div class="filter-section">
+              <label class="filter-title">Categorías</label>
+              <div class="category-filters">
+                <button class="cat-pill active" data-cat="all">
+                  <span>Todas</span>
+                  <span class="cat-count">{productos.length}</span>
+                </button>
+                {categorias.map((cat) => {
+                  const count = productos.filter((p) => String(p.categoriaId) === String(cat.id)).length;
+                  return (
+                    <button class="cat-pill" data-cat={cat.id}>
+                      <span>{cat.nombre}</span>
+                      <span class="cat-count">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <!-- Filtro de Precio Máximo -->
+            <div class="filter-section">
+              <div class="filter-row-label">
+                <label class="filter-title" for="price-range">Precio Máximo</label>
+                <span id="price-display" class="price-val">$600 MXN</span>
+              </div>
+              <input 
+                type="range" 
+                id="price-range" 
+                min="250" 
+                max="600" 
+                step="20" 
+                value="600" 
+                class="range-slider"
+              />
+              <div class="range-labels">
+                <span>$250</span>
+                <span>$600+</span>
+              </div>
+            </div>
+
+            <!-- Filtro de Disponibilidad -->
+            <div class="filter-section">
+              <label class="checkbox-container">
+                <input type="checkbox" id="stock-only-toggle" />
+                <span class="checkmark"></span>
+                <span class="checkbox-text">Solo libros en existencia</span>
+              </label>
+            </div>
+
+            <!-- Ordenamiento -->
+            <div class="filter-section">
+              <label class="filter-title" for="sort-select">Ordenar por</label>
+              <select id="sort-select" class="form-select">
+                <option value="featured">Destacados primero</option>
+                <option value="price-asc">Precio: Menor a Mayor</option>
+                <option value="price-desc">Precio: Mayor a Menor</option>
+                <option value="rating">Mejor Calificados</option>
+              </select>
+            </div>
+
+          </div>
+        </aside>
+
+        <!-- Contenedor Principal de Productos -->
+        <main class="catalog-main">
+          
+          <div class="catalog-bar">
+            <span id="results-count" class="results-text">
+              Mostrando <strong>{productos.length}</strong> libros disponibles
+            </span>
+          </div>
+
+          <!-- Grid de Libros -->
+          <div id="books-grid" class="books-grid">
+            {productos.map((book) => {
+              const catObj = categorias.find((c) => String(c.id) === String(book.categoriaId));
+              const catName = catObj ? catObj.nombre : 'Libro';
+              const hasDiscount = book.precioAnterior && book.precioAnterior > book.precio;
+              const discountPercent = hasDiscount 
+                ? Math.round(((book.precioAnterior - book.precio) / book.precioAnterior) * 100) 
+                : 0;
+
+              return (
+                <article 
+                  class="card book-card" 
+                  data-id={book.id}
+                  data-cat={book.categoriaId}
+                  data-price={book.precio}
+                  data-rating={book.rating}
+                  data-stock={book.stock}
+                  data-featured={book.destacado ? 'true' : 'false'}
+                  data-title={book.titulo.toLowerCase()}
+                  data-author={book.autor.toLowerCase()}
+                >
+                  <div class="book-card__media">
+                    <img 
+                      src={book.imagen} 
+                      alt={`Portada de ${book.titulo}`} 
+                      loading="lazy" 
+                      class="book-card__img"
+                    />
+                    <div class="book-card__badges">
+                      <span class="badge badge-primary cat-badge">{catName}</span>
+                      {hasDiscount && (
+                        <span class="badge badge-danger discount-badge">-{discountPercent}%</span>
+                      )}
+                    </div>
+
+                    <!-- Botón de Vista Rápida -->
+                    <button 
+                      class="quick-view-btn" 
+                      title="Vista Rápida"
+                      data-id={book.id}
+                      data-title={book.titulo}
+                      data-author={book.autor}
+                      data-price={book.precio}
+                      data-oldprice={book.precioAnterior || ''}
+                      data-cover={book.imagen}
+                      data-desc={book.descripcion}
+                      data-pages={book.paginas}
+                      data-isbn={book.isbn}
+                      data-stock={book.stock}
+                      data-cat={catName}
+                    >
+                      Vista Rápida
+                    </button>
+                  </div>
+
+                  <div class="book-card__body">
+                    <span class="book-card__author">{book.autor}</span>
+                    <h3 class="book-card__title">
+                      <a href={`/producto/${book.id}`}>{book.titulo}</a>
+                    </h3>
+
+                    <div class="book-card__meta">
+                      <div class="book-rating" title={`Calificación: ${book.rating} estrellas`}>
+                        <span class="star-icon">&#9733;</span>
+                        <span class="rating-num">{book.rating}</span>
+                        <span class="reviews-count">({book.resenasCount})</span>
+                      </div>
+                      
+                      <div class="book-stock">
+                        {book.stock > 0 ? (
+                          <span class="stock-tag in-stock">{book.stock} disp.</span>
+                        ) : (
+                          <span class="stock-tag out-of-stock">Agotado</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div class="book-card__pricing">
+                      <div class="price-box">
+                        <span class="current-price">${book.precio.toFixed(2)} MXN</span>
+                        {hasDiscount && (
+                          <span class="old-price">${book.precioAnterior.toFixed(2)}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div class="book-card__actions">
+                      <a href={`/producto/${book.id}`} class="btn btn-outline btn-sm view-btn">
+                        Detalle
+                      </a>
+                      <button 
+                        class="btn btn-primary btn-sm add-cart-btn"
+                        data-id={book.id}
+                        data-title={book.titulo}
+                        data-author={book.autor}
+                        data-price={book.precio}
+                        data-cover={book.imagen}
+                        data-stock={book.stock}
+                        data-catid={book.categoriaId}
+                        disabled={book.stock <= 0}
+                      >
+                        Añadir
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          <!-- Mensaje cuando ningún libro coincide -->
+          <div id="no-results-box" class="no-results" style="display: none;">
+            <div class="no-results-icon" style="font-size:1.5rem; font-weight:700; color:var(--color-text-muted);">Sin resultados</div>
+            <h3>No se encontraron libros</h3>
+            <p>Prueba ajustando los términos de búsqueda, aumentando el precio máximo o seleccionando otra categoría.</p>
+            <button id="clear-all-filters-btn" class="btn btn-primary btn-sm">Limpiar todos los filtros</button>
+          </div>
+
+        </main>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Vista Rápida (Quick View) -->
+  <div id="quick-modal-backdrop" class="modal-backdrop" style="display: none;">
+    <div class="modal-window card" role="dialog" aria-modal="true">
+      <button id="modal-close-btn" class="modal-close" aria-label="Cerrar modal">✕</button>
+      <div class="modal-content">
+        <div class="modal-cover">
+          <img id="modal-img" src="" alt="Portada" />
+        </div>
+        <div class="modal-info">
+          <span id="modal-cat" class="badge badge-primary"></span>
+          <h2 id="modal-title"></h2>
+          <p id="modal-author" class="modal-author-text"></p>
+          
+          <div class="modal-pricing">
+            <span id="modal-price" class="current-price"></span>
+            <span id="modal-oldprice" class="old-price"></span>
+          </div>
+
+          <p id="modal-desc" class="modal-description"></p>
+
+          <div class="modal-details-grid">
+            <div><strong>Páginas:</strong> <span id="modal-pages"></span></div>
+            <div><strong>ISBN:</strong> <span id="modal-isbn"></span></div>
+            <div><strong>Stock disponible:</strong> <span id="modal-stock"></span></div>
+          </div>
+
+          <!-- Selector de Cantidad en Modal -->
+          <div class="modal-qty-row" style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1.25rem;">
+            <label style="font-weight:600; font-size:0.9rem;">Cantidad:</label>
+            <div style="display:inline-flex; border:1.5px solid var(--color-border); border-radius:var(--radius-md); overflow:hidden;">
+              <button type="button" id="modal-qty-minus" style="width:2.2rem; height:2.2rem; background:var(--color-background); font-weight:700; font-size:1.1rem; cursor:pointer;">−</button>
+              <input type="number" id="modal-qty-input" value="1" min="1" readonly style="width:3rem; text-align:center; border:none; font-weight:700; font-size:1rem;" />
+              <button type="button" id="modal-qty-plus" style="width:2.2rem; height:2.2rem; background:var(--color-background); font-weight:700; font-size:1.1rem; cursor:pointer;">+</button>
+            </div>
+            <span id="modal-stock-warning" style="font-size:0.8rem; color:var(--color-text-muted);"></span>
+          </div>
+
+          <div class="modal-actions">
+            <a id="modal-full-link" href="#" class="btn btn-outline">Ver Ficha Completa</a>
+            <button id="modal-add-btn" class="btn btn-primary">Agregar al Carrito</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</BaseLayout>
+
+<style>
+  .catalog-page {
+    padding: var(--spacing-xl) 0 var(--spacing-2xl);
+  }
+
+  .catalog-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
+  }
+
+  .catalog-hero__text h1 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.85rem;
+    color: var(--color-text);
+  }
+
+  .catalog-hero__text p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+  }
+
+  .search-box {
+    position: relative;
+    width: min(100%, 400px);
+    display: flex;
+    align-items: center;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.85rem;
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.75rem 2.25rem 0.75rem 2.4rem;
+    border: 1.5px solid var(--color-border);
+    border-radius: 9999px;
+    background: var(--color-surface);
+    font-size: 0.92rem;
+    color: var(--color-text);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+
+  .clear-btn {
+    position: absolute;
+    right: 0.85rem;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 50%;
+  }
+
+  .clear-btn:hover {
+    color: var(--color-text);
+  }
+
+  .catalog-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: var(--spacing-xl);
+    align-items: start;
+  }
+
+  /* Sidebar */
+  .filter-card {
+    padding: var(--spacing-lg);
+    background: var(--color-surface);
+    position: sticky;
+    top: 5rem;
+  }
+
+  .filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .filter-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--color-text);
+  }
+
+  .btn-text {
+    font-size: 0.8rem;
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+
+  .btn-text:hover {
+    text-decoration: underline;
+  }
+
+  .filter-section {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .filter-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .filter-title {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .filter-row-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .price-val {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .category-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .cat-pill {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.45rem 0.65rem;
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    color: var(--color-text);
+    background: transparent;
+    transition: all 0.15s ease;
+    text-align: left;
+    width: 100%;
+  }
+
+  .cat-pill:hover {
+    background: var(--color-background);
+    color: var(--color-primary);
+  }
+
+  .cat-pill.active {
+    background: #eff6ff;
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+
+  .cat-count {
+    font-size: 0.75rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 9999px;
+    background: var(--color-border);
+    color: var(--color-text-muted);
+  }
+
+  .cat-pill.active .cat-count {
+    background: #dbeafe;
+    color: var(--color-primary);
+  }
+
+  .range-slider {
+    width: 100%;
+    margin-block: 0.5rem;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+  }
+
+  .range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.88rem;
+  }
+
+  .checkbox-container input {
+    accent-color: var(--color-primary);
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+  }
+
+  /* Catalog Main & Grid */
+  .catalog-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .results-text {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+  }
+
+  .books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--spacing-lg);
+  }
+
+  .book-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+  }
+
+  .book-card__media {
+    position: relative;
+    background: #f1f5f9;
+    height: 280px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .book-card__img {
+    height: 90%;
+    width: auto;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  }
+
+  .book-card:hover .book-card__img {
+    transform: scale(1.04);
+  }
+
+  .book-card__badges {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .quick-view-btn {
+    position: absolute;
+    bottom: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(15, 23, 42, 0.85);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    border-radius: 9999px;
+    opacity: 0;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+  }
+
+  .book-card:hover .quick-view-btn {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .book-card__body {
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .book-card__author {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.2rem;
+  }
+
+  .book-card__title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.6rem;
+  }
+
+  .book-card__title a:hover {
+    color: var(--color-primary);
+  }
+
+  .book-card__meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .book-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .rating-num {
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .reviews-count {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+  }
+
+  .stock-tag {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .stock-tag.in-stock {
+    background: #ecfdf5;
+    color: #065f46;
+  }
+
+  .stock-tag.out-of-stock {
+    background: #fef2f2;
+    color: #991b1b;
+  }
+
+  .book-card__pricing {
+    margin-top: auto;
+    margin-bottom: var(--spacing-md);
+  }
+
+  .price-box {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .current-price {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--color-primary);
+  }
+
+  .old-price {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+  }
+
+  .book-card__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: var(--spacing-2xl) var(--spacing-md);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--color-border);
+  }
+
+  .no-results-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-md);
+  }
+
+  .modal-window {
+    position: relative;
+    max-width: 680px;
+    width: 100%;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.25rem;
+    color: var(--color-text-muted);
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  .modal-close:hover {
+    background: var(--color-background);
+    color: var(--color-text);
+  }
+
+  .modal-content {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-xl);
+  }
+
+  .modal-cover {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-background);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+  }
+
+  .modal-cover img {
+    max-height: 280px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .modal-info h2 {
+    margin: 0.5rem 0 0.25rem 0;
+    font-size: 1.4rem;
+  }
+
+  .modal-author-text {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    margin: 0 0 0.85rem 0;
+  }
+
+  .modal-pricing {
+    margin-bottom: 0.85rem;
+  }
+
+  .modal-description {
+    font-size: 0.9rem;
+    color: var(--color-text);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    max-height: 100px;
+    overflow-y: auto;
+  }
+
+  .modal-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1.25rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 900px) {
+    .catalog-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .filter-card {
+      position: static;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .modal-content {
+      grid-template-columns: 1fr;
+    }
+
+    .modal-cover {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { cartService } from '../services/cart.js';
+
+  // Variables de filtrado reactivo
+  let currentCategory = 'all';
+  let currentSearch = '';
+  let currentMaxPrice = 600;
+  let currentStockOnly = false;
+  let currentSort = 'featured';
+
+  const cards = Array.from(document.querySelectorAll('.book-card')) as HTMLElement[];
+  const searchInput = document.getElementById('catalog-search-input') as HTMLInputElement;
+  const clearSearchBtn = document.getElementById('clear-search-btn') as HTMLButtonElement;
+  const priceRange = document.getElementById('price-range') as HTMLInputElement;
+  const priceDisplay = document.getElementById('price-display') as HTMLElement;
+  const stockToggle = document.getElementById('stock-only-toggle') as HTMLInputElement;
+  const sortSelect = document.getElementById('sort-select') as HTMLSelectElement;
+  const resultsCount = document.getElementById('results-count') as HTMLElement;
+  const noResultsBox = document.getElementById('no-results-box') as HTMLElement;
+  const resetBtn = document.getElementById('reset-filters-btn') as HTMLButtonElement;
+  const clearAllBtn = document.getElementById('clear-all-filters-btn') as HTMLButtonElement;
+
+  function applyFilters() {
+    let visibleCount = 0;
+
+    cards.forEach((card) => {
+      const cat = card.dataset.cat || '';
+      const price = parseFloat(card.dataset.price || '0');
+      const stock = parseInt(card.dataset.stock || '0', 10);
+      const title = card.dataset.title || '';
+      const author = card.dataset.author || '';
+
+      // Filtro de Categoría
+      const matchesCat = currentCategory === 'all' || cat === currentCategory;
+
+      // Filtro de Búsqueda
+      const matchesSearch = !currentSearch || title.includes(currentSearch) || author.includes(currentSearch);
+
+      // Filtro de Precio
+      const matchesPrice = price <= currentMaxPrice;
+
+      // Filtro de Stock
+      const matchesStock = !currentStockOnly || stock > 0;
+
+      if (matchesCat && matchesSearch && matchesPrice && matchesStock) {
+        card.style.display = 'flex';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    // Ordenamiento
+    const grid = document.getElementById('books-grid');
+    if (grid) {
+      const sortedCards = cards.filter((c) => c.style.display !== 'none');
+      sortedCards.sort((a, b) => {
+        const priceA = parseFloat(a.dataset.price || '0');
+        const priceB = parseFloat(b.dataset.price || '0');
+        const ratingA = parseFloat(a.dataset.rating || '0');
+        const ratingB = parseFloat(b.dataset.rating || '0');
+        const featA = a.dataset.featured === 'true' ? 1 : 0;
+        const featB = b.dataset.featured === 'true' ? 1 : 0;
+
+        if (currentSort === 'price-asc') return priceA - priceB;
+        if (currentSort === 'price-desc') return priceB - priceA;
+        if (currentSort === 'rating') return ratingB - ratingA;
+        return featB - featA;
+      });
+
+      sortedCards.forEach((c) => grid.appendChild(c));
+    }
+
+    if (resultsCount) {
+      resultsCount.innerHTML = `Mostrando <strong>${visibleCount}</strong> libros disponibles`;
+    }
+
+    if (noResultsBox) {
+      noResultsBox.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+  }
+
+  // Eventos de Búsqueda
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const val = (e.target as HTMLInputElement).value.toLowerCase().trim();
+      currentSearch = val;
+      if (clearSearchBtn) clearSearchBtn.style.display = val ? 'block' : 'none';
+      applyFilters();
+    });
+  }
+
+  if (clearSearchBtn) {
+    clearSearchBtn.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      clearSearchBtn.style.display = 'none';
+      currentSearch = '';
+      applyFilters();
+    });
+  }
+
+  // Eventos de Categoría
+  document.querySelectorAll('.cat-pill').forEach((pill) => {
+    pill.addEventListener('click', (e) => {
+      document.querySelectorAll('.cat-pill').forEach((p) => p.classList.remove('active'));
+      const target = e.currentTarget as HTMLElement;
+      target.classList.add('active');
+      currentCategory = target.dataset.cat || 'all';
+      applyFilters();
+    });
+  });
+
+  // Evento de Precio
+  if (priceRange) {
+    priceRange.addEventListener('input', (e) => {
+      const val = parseInt((e.target as HTMLInputElement).value, 10);
+      currentMaxPrice = val;
+      if (priceDisplay) priceDisplay.textContent = `$${val} MXN`;
+      applyFilters();
+    });
+  }
+
+  // Evento de Stock
+  if (stockToggle) {
+    stockToggle.addEventListener('change', (e) => {
+      currentStockOnly = (e.target as HTMLInputElement).checked;
+      applyFilters();
+    });
+  }
+
+  // Evento de Ordenamiento
+  if (sortSelect) {
+    sortSelect.addEventListener('change', (e) => {
+      currentSort = (e.target as HTMLSelectElement).value;
+      applyFilters();
+    });
+  }
+
+  function resetAll() {
+    currentCategory = 'all';
+    currentSearch = '';
+    currentMaxPrice = 600;
+    currentStockOnly = false;
+    currentSort = 'featured';
+
+    if (searchInput) searchInput.value = '';
+    if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+    if (priceRange) priceRange.value = '600';
+    if (priceDisplay) priceDisplay.textContent = '$600 MXN';
+    if (stockToggle) stockToggle.checked = false;
+    if (sortSelect) sortSelect.value = 'featured';
+
+    document.querySelectorAll('.cat-pill').forEach((p) => p.classList.remove('active'));
+    const allPill = document.querySelector('.cat-pill[data-cat="all"]');
+    if (allPill) allPill.classList.add('active');
+
+    applyFilters();
+  }
+
+  if (resetBtn) resetBtn.addEventListener('click', resetAll);
+  if (clearAllBtn) clearAllBtn.addEventListener('click', resetAll);
+
+  // Agregar al Carrito desde tarjetas
+  document.querySelectorAll('.add-cart-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLButtonElement;
+      const id = target.dataset.id;
+      const titulo = target.dataset.title;
+      const autor = target.dataset.author;
+      const precio = target.dataset.price;
+      const imagen = target.dataset.cover;
+      const stock = target.dataset.stock;
+      const categoriaId = target.dataset.catid;
+
+      try {
+        cartService.addItem({
+          id,
+          titulo,
+          autor,
+          precio,
+          imagen,
+          stock,
+          categoriaId
+        }, 1);
+
+        if ((window as any).showToast) {
+          (window as any).showToast(`"${titulo}" agregado al carrito`, 'success');
+        }
+      } catch (err: any) {
+        if ((window as any).showToast) {
+          (window as any).showToast(err.message, 'error');
+        }
+      }
+    });
+  });
+
+  // Modal de Vista Rápida
+  // Modal de Vista Rápida
+  const modal = document.getElementById('quick-modal-backdrop') as HTMLElement;
+  const modalClose = document.getElementById('modal-close-btn') as HTMLElement;
+  let activeModalBook: any = null;
+  let modalQty = 1;
+
+  const modalQtyInput = document.getElementById('modal-qty-input') as HTMLInputElement;
+  const modalQtyMinus = document.getElementById('modal-qty-minus') as HTMLButtonElement;
+  const modalQtyPlus = document.getElementById('modal-qty-plus') as HTMLButtonElement;
+  const modalStockWarning = document.getElementById('modal-stock-warning') as HTMLElement;
+
+  if (modalQtyMinus && modalQtyPlus && modalQtyInput) {
+    modalQtyMinus.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (modalQty > 1) {
+        modalQty--;
+        modalQtyInput.value = modalQty.toString();
+      }
+    });
+
+    modalQtyPlus.addEventListener('click', (e) => {
+      e.preventDefault();
+      const max = activeModalBook ? activeModalBook.stock : 99;
+      if (modalQty < max) {
+        modalQty++;
+        modalQtyInput.value = modalQty.toString();
+      } else {
+        if ((window as any).showToast) {
+          (window as any).showToast(`Solo hay ${max} unidades disponibles`, 'warning');
+        }
+      }
+    });
+
+    modalQtyInput.addEventListener('change', () => {
+      let val = parseInt(modalQtyInput.value, 10);
+      const max = activeModalBook ? activeModalBook.stock : 99;
+      if (isNaN(val) || val < 1) val = 1;
+      if (val > max) val = max;
+      modalQty = val;
+      modalQtyInput.value = modalQty.toString();
+    });
+  }
+
+  document.querySelectorAll('.quick-view-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLElement;
+      activeModalBook = {
+        id: target.dataset.id,
+        titulo: target.dataset.title,
+        autor: target.dataset.author,
+        precio: parseFloat(target.dataset.price || '0'),
+        precioAnterior: target.dataset.oldprice ? parseFloat(target.dataset.oldprice) : null,
+        imagen: target.dataset.cover,
+        descripcion: target.dataset.desc,
+        paginas: target.dataset.pages,
+        isbn: target.dataset.isbn,
+        stock: parseInt(target.dataset.stock || '0', 10),
+        categoria: target.dataset.cat,
+        categoriaId: target.dataset.catid
+      };
+
+      modalQty = 1;
+      if (modalQtyInput) {
+        modalQtyInput.value = '1';
+        modalQtyInput.max = activeModalBook.stock.toString();
+      }
+      if (modalStockWarning) {
+        modalStockWarning.textContent = activeModalBook.stock > 0 ? `(Máx. ${activeModalBook.stock})` : '(Agotado)';
+      }
+
+      (document.getElementById('modal-img') as HTMLImageElement).src = activeModalBook.imagen;
+      (document.getElementById('modal-cat') as HTMLElement).textContent = activeModalBook.categoria;
+      (document.getElementById('modal-title') as HTMLElement).textContent = activeModalBook.titulo;
+      (document.getElementById('modal-author') as HTMLElement).textContent = `Por ${activeModalBook.autor}`;
+      (document.getElementById('modal-price') as HTMLElement).textContent = `$${activeModalBook.precio.toFixed(2)} MXN`;
+      
+      const oldEl = document.getElementById('modal-oldprice') as HTMLElement;
+      if (activeModalBook.precioAnterior) {
+        oldEl.textContent = `$${activeModalBook.precioAnterior.toFixed(2)}`;
+        oldEl.style.display = 'inline';
+      } else {
+        oldEl.style.display = 'none';
+      }
+
+      (document.getElementById('modal-desc') as HTMLElement).textContent = activeModalBook.descripcion;
+      (document.getElementById('modal-pages') as HTMLElement).textContent = `${activeModalBook.paginas} págs.`;
+      (document.getElementById('modal-isbn') as HTMLElement).textContent = activeModalBook.isbn;
+      (document.getElementById('modal-stock') as HTMLElement).textContent = `${activeModalBook.stock} unidades`;
+      (document.getElementById('modal-full-link') as HTMLAnchorElement).href = `/producto/${activeModalBook.id}`;
+
+      const addModalBtn = document.getElementById('modal-add-btn') as HTMLButtonElement;
+      addModalBtn.disabled = activeModalBook.stock <= 0;
+
+      modal.style.display = 'flex';
+    });
+  });
+
+  if (modalClose) {
+    modalClose.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+  }
+
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.style.display = 'none';
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal && modal.style.display !== 'none') {
+      modal.style.display = 'none';
+    }
+  });
+
+  const modalAddBtn = document.getElementById('modal-add-btn');
+  if (modalAddBtn) {
+    modalAddBtn.addEventListener('click', () => {
+      if (!activeModalBook) return;
+      try {
+        cartService.addItem(activeModalBook, modalQty);
+        if ((window as any).showToast) {
+          (window as any).showToast(`Se agregaron ${modalQty} unidad(es) de "${activeModalBook.titulo}" al carrito`, 'success');
+        }
+        modal.style.display = 'none';
+      } catch (err: any) {
+        if ((window as any).showToast) {
+          (window as any).showToast(err.message, 'error');
+        }
+      }
+    });
+  }
+</script>

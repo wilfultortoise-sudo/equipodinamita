@@ -1,0 +1,685 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { fetchCatalogData, INITIAL_PRODUCTOS, INITIAL_CATEGORIAS } from '../../services/productsData.js';
+
+export async function getStaticPaths() {
+  const { productos } = await fetchCatalogData();
+  const list = productos && productos.length > 0 ? productos : INITIAL_PRODUCTOS;
+  return list.map((p) => ({
+    params: { id: String(p.id) },
+    props: { productData: p }
+  }));
+}
+
+const { id } = Astro.params;
+const { productData } = Astro.props;
+
+const { categorias, productos } = await fetchCatalogData();
+const allProducts = productos && productos.length > 0 ? productos : INITIAL_PRODUCTOS;
+const allCategories = categorias && categorias.length > 0 ? categorias : INITIAL_CATEGORIAS;
+
+const book = productData || allProducts.find((p) => String(p.id) === String(id)) || allProducts[0];
+const category = allCategories.find((c) => String(c.id) === String(book.categoriaId)) || { nombre: 'Literatura General', icono: '' };
+
+// Libros relacionados de la misma categoría
+const relatedBooks = allProducts
+  .filter((p) => String(p.categoriaId) === String(book.categoriaId) && String(p.id) !== String(book.id))
+  .slice(0, 4);
+
+const hasDiscount = book.precioAnterior && book.precioAnterior > book.precio;
+const discountPercent = hasDiscount 
+  ? Math.round(((book.precioAnterior - book.precio) / book.precioAnterior) * 100) 
+  : 0;
+
+const pageTitle = `${book.titulo} — BiblioTech Store`;
+---
+
+<BaseLayout pageTitle={pageTitle}>
+  <div class="product-page">
+    <div class="container">
+      
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb" aria-label="Navegación secundaria">
+        <a href="/">Inicio</a>
+        <span class="sep">/</span>
+        <a href="/catalogo">Catálogo</a>
+        <span class="sep">/</span>
+        <span class="current">{book.titulo}</span>
+      </nav>
+
+      <!-- Ficha Principal del Libro -->
+      <div class="product-grid">
+        
+        <!-- Columna 1: Portada e Imagen -->
+        <div class="product-media-col">
+          <div class="card product-media-card">
+            <img 
+              src={book.imagen} 
+              alt={`Portada de ${book.titulo}`} 
+              class="product-cover-img"
+            />
+            {hasDiscount && (
+              <span class="badge badge-danger discount-tag">-{discountPercent}% OFF</span>
+            )}
+          </div>
+        </div>
+
+        <!-- Columna 2: Información Técnica y Compra -->
+        <div class="product-info-col">
+          <div class="product-header">
+            <span class="badge badge-primary cat-badge">
+              {category.nombre}
+            </span>
+            <h1 class="product-title">{book.titulo}</h1>
+            <p class="product-author">Escrito por <strong>{book.autor}</strong></p>
+          </div>
+
+          <!-- Rating y Reseñas -->
+          <div class="product-rating-box">
+            <div class="stars">
+              <span class="star">&#9733;</span>
+              <span class="rating-val">{book.rating}</span>
+            </div>
+            <span class="rating-sep">•</span>
+            <span class="reviews-text">{book.resenasCount} reseñas de lectores</span>
+            <span class="rating-sep">•</span>
+            <span class={`stock-pill ${book.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
+              {book.stock > 0 ? `✓ En Stock (${book.stock} disponibles)` : '✕ Agotado'}
+            </span>
+          </div>
+
+          <!-- Precios -->
+          <div class="product-price-section">
+            <div class="price-display">
+              <span class="main-price">${book.precio.toFixed(2)} MXN</span>
+              {hasDiscount && (
+                <span class="prev-price">${book.precioAnterior.toFixed(2)}</span>
+              )}
+            </div>
+            {hasDiscount && (
+              <p class="savings-text">
+                Ahorras ${(book.precioAnterior - book.precio).toFixed(2)} MXN en esta compra
+              </p>
+            )}
+            <p class="shipping-note">
+              Envío GRATIS a partir de $999 MXN de compra a todo el país.
+            </p>
+          </div>
+
+          <!-- Sinopsis Breve -->
+          <div class="product-summary">
+            <h3>Sinopsis</h3>
+            <p>{book.descripcion}</p>
+          </div>
+
+          <!-- Selector de Cantidad y Acciones de Compra -->
+          <div 
+            class="product-buy-box card"
+            id="product-page-data"
+            data-id={book.id}
+            data-title={book.titulo}
+            data-author={book.autor}
+            data-price={book.precio}
+            data-oldprice={book.precioAnterior || ''}
+            data-image={book.imagen}
+            data-stock={book.stock}
+            data-catid={book.categoriaId}
+          >
+            <div class="quantity-row">
+              <label for="qty-input">Cantidad:</label>
+              <div class="qty-control">
+                <button type="button" id="qty-minus" class="qty-btn" aria-label="Restar">-</button>
+                <input 
+                  type="number" 
+                  id="qty-input" 
+                  value="1" 
+                  min="1" 
+                  max={book.stock} 
+                  class="qty-field"
+                />
+                <button type="button" id="qty-plus" class="qty-btn" aria-label="Sumar">+</button>
+              </div>
+              <span class="stock-reminder">(Máximo {book.stock} unidades)</span>
+            </div>
+
+            <div class="actions-row">
+              <button 
+                type="button" 
+                id="add-to-cart-btn" 
+                class="btn btn-outline btn-lg"
+                disabled={book.stock <= 0}
+              >
+                Añadir al Carrito
+              </button>
+              <button 
+                type="button" 
+                id="buy-now-btn" 
+                class="btn btn-primary btn-lg"
+                disabled={book.stock <= 0}
+              >
+                Comprar Ahora
+              </button>
+            </div>
+          </div>
+
+          <!-- Metadatos de la Edición -->
+          <div class="product-specs card">
+            <div class="spec-item">
+              <span class="spec-label">Editorial:</span>
+              <span class="spec-value">{book.editorial || 'No especificada'}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">ISBN:</span>
+              <span class="spec-value">{book.isbn || 'No disponible'}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Páginas:</span>
+              <span class="spec-value">{book.paginas || 300} páginas</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Formato:</span>
+              <span class="spec-value">Tapa blanda / Físico</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Libros Relacionados -->
+      {relatedBooks.length > 0 && (
+        <section class="related-section">
+          <h2>Títulos relacionados en {category.nombre}</h2>
+          <div class="related-grid">
+            {relatedBooks.map((rel) => (
+              <a href={`/producto/${rel.id}`} class="card related-card">
+                <div class="related-cover">
+                  <img src={rel.imagen} alt={rel.titulo} loading="lazy" />
+                </div>
+                <div class="related-info">
+                  <span class="related-author">{rel.autor}</span>
+                  <h4 class="related-title">{rel.titulo}</h4>
+                  <span class="related-price">${rel.precio.toFixed(2)} MXN</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .product-page {
+    padding: var(--spacing-xl) 0 var(--spacing-2xl);
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .breadcrumb a:hover {
+    color: var(--color-primary);
+  }
+
+  .breadcrumb .sep {
+    color: var(--color-border);
+  }
+
+  .breadcrumb .current {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .product-grid {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: var(--spacing-2xl);
+    align-items: start;
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  /* Media Card */
+  .product-media-card {
+    position: relative;
+    padding: var(--spacing-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    border-radius: var(--radius-lg);
+  }
+
+  .product-cover-img {
+    max-height: 480px;
+    width: auto;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.25);
+    transition: transform 0.3s ease;
+  }
+
+  .product-cover-img:hover {
+    transform: scale(1.02);
+  }
+
+  .discount-tag {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 0.85rem;
+  }
+
+  /* Info Column */
+  .product-header {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .cat-badge {
+    margin-bottom: 0.5rem;
+  }
+
+  .product-title {
+    margin: 0.5rem 0 0.25rem 0;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--color-text);
+  }
+
+  .product-author {
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--color-text-muted);
+  }
+
+  .product-rating-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0;
+    border-block: 1px solid var(--color-border);
+    margin-bottom: var(--spacing-lg);
+    font-size: 0.9rem;
+  }
+
+  .stars {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .rating-val {
+    font-weight: 700;
+  }
+
+  .rating-sep {
+    color: var(--color-border);
+  }
+
+  .reviews-text {
+    color: var(--color-text-muted);
+  }
+
+  .stock-pill {
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .stock-pill.in-stock {
+    background: #ecfdf5;
+    color: #065f46;
+  }
+
+  .stock-pill.out-of-stock {
+    background: #fef2f2;
+    color: #991b1b;
+  }
+
+  /* Price Section */
+  .product-price-section {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .price-display {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+  }
+
+  .main-price {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--color-primary);
+  }
+
+  .prev-price {
+    font-size: 1.2rem;
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+  }
+
+  .savings-text {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.85rem;
+    color: #059669;
+    font-weight: 600;
+  }
+
+  .shipping-note {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.88rem;
+    color: var(--color-text-muted);
+  }
+
+  /* Summary */
+  .product-summary {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .product-summary h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+  }
+
+  .product-summary p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--color-text);
+  }
+
+  /* Buy Box */
+  .product-buy-box {
+    padding: var(--spacing-lg);
+    background: var(--color-surface);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .quantity-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .quantity-row label {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .qty-control {
+    display: inline-flex;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .qty-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--color-background);
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+  }
+
+  .qty-btn:hover {
+    background: #e2e8f0;
+  }
+
+  .qty-field {
+    width: 3.5rem;
+    text-align: center;
+    border: none;
+    border-inline: 1.5px solid var(--color-border);
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  .stock-reminder {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+  }
+
+  .actions-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .btn-lg {
+    padding: 0.85rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  /* Specs */
+  .product-specs {
+    padding: var(--spacing-md) var(--spacing-lg);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    font-size: 0.88rem;
+    background: var(--color-background);
+  }
+
+  .spec-label {
+    color: var(--color-text-muted);
+    margin-right: 0.35rem;
+  }
+
+  .spec-value {
+    font-weight: 600;
+  }
+
+  /* Related Section */
+  .related-section {
+    padding-top: var(--spacing-xl);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .related-section h2 {
+    margin: 0 0 var(--spacing-lg) 0;
+    font-size: 1.4rem;
+  }
+
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--spacing-lg);
+  }
+
+  .related-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-md);
+  }
+
+  .related-cover {
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .related-cover img {
+    max-height: 150px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .related-author {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .related-title {
+    margin: 0.2rem 0;
+    font-size: 0.95rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .related-price {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  @media (max-width: 900px) {
+    .product-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .product-media-card {
+      max-height: 380px;
+    }
+
+    .product-cover-img {
+      max-height: 340px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .actions-row {
+      grid-template-columns: 1fr;
+    }
+
+    .product-specs {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  import { cartService } from '../../services/cart.js';
+
+  function setupProductActions() {
+    const dataEl = document.getElementById('product-page-data');
+    if (!dataEl) return;
+
+    const bookId = dataEl.dataset.id || '';
+    const bookTitle = dataEl.dataset.title || '';
+    const bookAuthor = dataEl.dataset.author || '';
+    const bookPrice = parseFloat(dataEl.dataset.price || '0');
+    const bookOldPrice = dataEl.dataset.oldprice ? parseFloat(dataEl.dataset.oldprice) : null;
+    const bookImage = dataEl.dataset.image || '';
+    const maxStock = parseInt(dataEl.dataset.stock || '1', 10);
+    const bookCatId = dataEl.dataset.catid || '';
+
+    let currentQuantity = 1;
+
+    const minusBtn = document.getElementById('qty-minus') as HTMLButtonElement;
+    const plusBtn = document.getElementById('qty-plus') as HTMLButtonElement;
+    const qtyInput = document.getElementById('qty-input') as HTMLInputElement;
+    const addBtn = document.getElementById('add-to-cart-btn') as HTMLButtonElement;
+    const buyBtn = document.getElementById('buy-now-btn') as HTMLButtonElement;
+
+    if (minusBtn && plusBtn && qtyInput) {
+      minusBtn.onclick = (e) => {
+        e.preventDefault();
+        if (currentQuantity > 1) {
+          currentQuantity--;
+          qtyInput.value = currentQuantity.toString();
+        }
+      };
+
+      plusBtn.onclick = (e) => {
+        e.preventDefault();
+        if (currentQuantity < maxStock) {
+          currentQuantity++;
+          qtyInput.value = currentQuantity.toString();
+        } else {
+          if ((window as any).showToast) {
+            (window as any).showToast(`Solo hay ${maxStock} unidades disponibles en inventario`, 'warning');
+          }
+        }
+      };
+
+      qtyInput.onchange = () => {
+        let val = parseInt(qtyInput.value, 10);
+        if (isNaN(val) || val < 1) val = 1;
+        if (val > maxStock) {
+          val = maxStock;
+          if ((window as any).showToast) {
+            (window as any).showToast(`Solo hay ${maxStock} unidades disponibles en inventario`, 'warning');
+          }
+        }
+        currentQuantity = val;
+        qtyInput.value = currentQuantity.toString();
+      };
+    }
+
+    if (addBtn) {
+      addBtn.onclick = (e) => {
+        e.preventDefault();
+        try {
+          cartService.addItem({
+            id: bookId,
+            titulo: bookTitle,
+            autor: bookAuthor,
+            precio: bookPrice,
+            precioAnterior: bookOldPrice,
+            imagen: bookImage,
+            stock: maxStock,
+            categoriaId: bookCatId
+          }, currentQuantity);
+
+          if ((window as any).showToast) {
+            (window as any).showToast(`Se agregaron ${currentQuantity} unidad(es) de "${bookTitle}" al carrito`, 'success');
+          }
+        } catch (err: any) {
+          if ((window as any).showToast) {
+            (window as any).showToast(err.message, 'error');
+          }
+        }
+      };
+    }
+
+    if (buyBtn) {
+      buyBtn.onclick = (e) => {
+        e.preventDefault();
+        try {
+          cartService.addItem({
+            id: bookId,
+            titulo: bookTitle,
+            autor: bookAuthor,
+            precio: bookPrice,
+            precioAnterior: bookOldPrice,
+            imagen: bookImage,
+            stock: maxStock,
+            categoriaId: bookCatId
+          }, currentQuantity);
+
+          window.location.href = '/checkout';
+        } catch (err: any) {
+          if ((window as any).showToast) {
+            (window as any).showToast(err.message, 'error');
+          }
+        }
+      };
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupProductActions);
+  } else {
+    setupProductActions();
+  }
+  document.addEventListener('astro:page-load', setupProductActions);
+</script>

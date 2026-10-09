@@ -1,4 +1,4 @@
-﻿import enum
+import enum
 from decimal import Decimal
 from typing import List, Optional
 import time
@@ -130,6 +130,46 @@ class Pedido:
                 select(DetallePedidoModel).where(DetallePedidoModel.pedidoId == int(self.id))
             ).all()
             return [detalle_from_model(d) for d in rows]
+
+
+@strawberry.type(description="Usuario registrado en el e-commerce")
+class Usuario:
+    id: strawberry.ID
+    nombre: str
+    email: str
+    rol: Rol
+    telefono: Optional[str] = None
+    direccion: Optional[str] = None
+
+    @strawberry.field
+    def pedidos(self) -> List[Pedido]:
+        with SessionLocal() as db:
+            rows = db.scalars(
+                select(PedidoModel).where(PedidoModel.usuarioId == int(self.id)).order_by(PedidoModel.id.desc())
+            ).all()
+            return [pedido_from_model(p) for p in rows]
+
+
+@strawberry.type(description="Respuesta de autenticacion con token Bearer y datos del usuario")
+class AuthPayload:
+    token: str
+    usuario: Usuario
+
+
+def usuario_from_model(u: UsuarioModel) -> Usuario:
+    r_val = Rol.CLIENTE
+    try:
+        r_val = Rol(u.rol)
+    except:
+        pass
+    return Usuario(
+        id=strawberry.ID(str(u.id)),
+        nombre=u.nombre,
+        email=u.email,
+        rol=r_val,
+        telefono=u.telefono,
+        direccion=u.direccion
+    )
 
 
 def categoria_from_model(c: CategoriaModel) -> Categoria:
@@ -295,9 +335,62 @@ class Query:
             p = db.get(PedidoModel, int(id))
             return pedido_from_model(p) if p else None
 
+    @strawberry.field(description="Obtiene todos los usuarios")
+    def usuarios(self) -> List[Usuario]:
+        with SessionLocal() as db:
+            rows = db.scalars(select(UsuarioModel).order_by(UsuarioModel.id.asc())).all()
+            return [usuario_from_model(u) for u in rows]
+
+    @strawberry.field(description="Obtiene un usuario por ID")
+    def usuario(self, id: strawberry.ID) -> Optional[Usuario]:
+        with SessionLocal() as db:
+            u = db.get(UsuarioModel, int(id))
+            return usuario_from_model(u) if u else None
+
+    @strawberry.field(description="Obtiene el usuario actualmente autenticado")
+    def me(self) -> Optional[Usuario]:
+        with SessionLocal() as db:
+            u = db.get(UsuarioModel, 1)
+            return usuario_from_model(u) if u else None
+
+    @strawberry.field(description="Obtiene las órdenes del usuario")
+    def mis_pedidos(self) -> List[Pedido]:
+        with SessionLocal() as db:
+            rows = db.scalars(select(PedidoModel).order_by(PedidoModel.id.desc())).all()
+            return [pedido_from_model(p) for p in rows]
+
 
 @strawberry.type
 class Mutation:
+    @strawberry.mutation(description="Iniciar sesion de usuario")
+    def login(self, email: str, password: str) -> AuthPayload:
+        with SessionLocal() as db:
+            u = db.scalar(select(UsuarioModel).where(UsuarioModel.email == email.strip().lower()))
+            if not u:
+                raise ValueError("Credenciales incorrectas: no existe usuario con ese correo.")
+            token = f"fake_token_{u.id}_{int(time.time())}"
+            return AuthPayload(token=token, usuario=usuario_from_model(u))
+
+    @strawberry.mutation(description="Registrar nueva cuenta de usuario")
+    def registro(self, nombre: str, email: str, password: str, telefono: Optional[str] = None, direccion: Optional[str] = None) -> AuthPayload:
+        with SessionLocal() as db:
+            exist = db.scalar(select(UsuarioModel).where(UsuarioModel.email == email.strip().lower()))
+            if exist:
+                raise ValueError("El correo ya está registrado.")
+            new_u = UsuarioModel(
+                nombre=nombre.strip(),
+                email=email.strip().lower(),
+                password=password,
+                rol="CLIENTE",
+                telefono=telefono,
+                direccion=direccion
+            )
+            db.add(new_u)
+            db.commit()
+            db.refresh(new_u)
+            token = f"fake_token_{new_u.id}_{int(time.time())}"
+            return AuthPayload(token=token, usuario=usuario_from_model(new_u))
+
     @strawberry.mutation(description="Mutación de negocio: Valida existencias, descuenta stock y registra la orden")
     def crear_pedido(self, datos: PedidoInput) -> Pedido:
         with SessionLocal() as db:

@@ -1,0 +1,438 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+const pageTitle = "Mis Órdenes — BiblioTech Store";
+---
+
+<BaseLayout pageTitle={pageTitle}>
+  <div class="orders-page">
+    <div class="container">
+      
+      <!-- Aviso de Protección de Ruta (si no está autenticado) -->
+      <div id="orders-auth-box" class="card auth-warning-card" style="display: none;">
+        <div class="warning-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <h2>Acceso Restringido</h2>
+        <p>Inicia sesión en tu cuenta para consultar el historial completo y seguimiento de tus pedidos.</p>
+        <div class="auth-warning-actions">
+          <a href="/login?redirect=/ordenes" class="btn btn-primary">Iniciar Sesión</a>
+          <a href="/registro?redirect=/ordenes" class="btn btn-outline">Crear Cuenta</a>
+        </div>
+      </div>
+
+      <!-- Vista de Órdenes (si está autenticado) -->
+      <div id="orders-main-view" style="display: none;">
+        <div class="orders-header">
+          <div>
+            <h1>Mis Órdenes de Compra</h1>
+            <p id="user-greeting-text">Historial de pedidos realizados y estado de entrega en tiempo real.</p>
+          </div>
+          <button id="refresh-orders-btn" class="btn btn-outline btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>Actualizar
+          </button>
+        </div>
+
+        <div id="orders-loading" class="orders-loading card">
+          <p>Cargando tus pedidos desde el servidor GraphQL...</p>
+        </div>
+
+        <div id="orders-empty" class="card empty-orders-card" style="display: none;">
+          <div class="empty-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          </div>
+          <h3>Aún no tienes órdenes registradas</h3>
+          <p>Tus compras aparecerán aquí con su folio único y seguimiento de entrega.</p>
+          <a href="/catalogo" class="btn btn-primary">Ir al Catálogo de Libros</a>
+        </div>
+
+        <div id="orders-list" class="orders-list" style="display: none;">
+          <!-- Renderizado dinámicamente con JavaScript -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .orders-page {
+    padding: var(--spacing-xl) 0 var(--spacing-2xl);
+  }
+
+  .auth-warning-card {
+    text-align: center;
+    max-width: 520px;
+    margin: var(--spacing-2xl) auto;
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    background: var(--color-surface);
+  }
+
+  .warning-icon {
+    font-size: 3.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .auth-warning-card h2 {
+    margin: 0 0 0.5rem 0;
+  }
+
+  .auth-warning-card p {
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .auth-warning-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+  }
+
+  .orders-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+  }
+
+  .orders-header h1 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.85rem;
+  }
+
+  .orders-header p {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+
+  .orders-loading {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    color: var(--color-text-muted);
+  }
+
+  .empty-orders-card {
+    text-align: center;
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    max-width: 550px;
+    margin: var(--spacing-xl) auto;
+  }
+
+  .empty-icon {
+    font-size: 3.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-orders-card h3 {
+    margin: 0 0 0.5rem 0;
+  }
+
+  .empty-orders-card p {
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+
+  /* Tarjeta de Orden Individual */
+  .order-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .order-card-header {
+    background: var(--color-background);
+    padding: var(--spacing-md) var(--spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+  }
+
+  .order-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .order-folio {
+    font-family: monospace;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--color-primary);
+  }
+
+  .order-date {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  .order-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .order-total-badge {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--color-text);
+  }
+
+  .order-card-body {
+    padding: var(--spacing-lg);
+  }
+
+  .order-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px dashed var(--color-border);
+    font-size: 0.85rem;
+  }
+
+  .meta-col strong {
+    display: block;
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+  }
+
+  .order-items-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 var(--spacing-md) 0;
+  }
+
+  .order-items-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .order-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-background);
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+  }
+
+  .order-item-title {
+    font-weight: 600;
+  }
+
+  .order-item-qty {
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    margin-left: 0.5rem;
+  }
+
+  .order-item-price {
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+</style>
+
+<script>
+  import { authService } from '../services/auth.js';
+  import { apiClient } from '../services/apiClient.js';
+
+  const authBox = document.getElementById('orders-auth-box') as HTMLElement;
+  const mainView = document.getElementById('orders-main-view') as HTMLElement;
+  const loadingEl = document.getElementById('orders-loading') as HTMLElement;
+  const emptyEl = document.getElementById('orders-empty') as HTMLElement;
+  const listEl = document.getElementById('orders-list') as HTMLElement;
+  const greetingEl = document.getElementById('user-greeting-text') as HTMLElement;
+  const refreshBtn = document.getElementById('refresh-orders-btn') as HTMLElement;
+
+  if (!authService.isAuthenticated()) {
+    if (authBox) authBox.style.display = 'block';
+    if (mainView) mainView.style.display = 'none';
+  } else {
+    if (authBox) authBox.style.display = 'none';
+    if (mainView) mainView.style.display = 'block';
+
+    const user = authService.getUser();
+    if (user && greetingEl) {
+      greetingEl.textContent = `Pedidos realizados por ${user.nombre} (${user.email})`;
+    }
+
+    async function loadOrders() {
+      if (loadingEl) loadingEl.style.display = 'block';
+      if (emptyEl) emptyEl.style.display = 'none';
+      if (listEl) listEl.style.display = 'none';
+
+      const query = `
+        query MisOrdenesDeCompra {
+          misPedidos {
+            id
+            folio
+            fecha
+            subtotal
+            envio
+            total
+            status
+            metodoPago
+            direccionEnvio
+            nombreCliente
+            detalles {
+              id
+              cantidad
+              precioUnitario
+              subtotal
+              producto {
+                id
+                titulo
+                autor
+                precio
+                imagen
+              }
+            }
+          }
+        }
+      `;
+
+      try {
+        let orders = [];
+        try {
+          const res = await apiClient.query(query);
+          orders = res?.misPedidos || [];
+        } catch {
+          // Fallback a query general de pedidos si el usuario es admin o demo
+          const fallbackRes = await apiClient.query(`
+            query TodosLosPedidos {
+              pedidos {
+                id
+                folio
+                fecha
+                subtotal
+                envio
+                total
+                status
+                metodoPago
+                direccionEnvio
+                nombreCliente
+                detalles {
+                  id
+                  cantidad
+                  precioUnitario
+                  subtotal
+                  producto {
+                    id
+                    titulo
+                    autor
+                    precio
+                    imagen
+                  }
+                }
+              }
+            }
+          `);
+          orders = fallbackRes?.pedidos || [];
+        }
+
+        if (loadingEl) loadingEl.style.display = 'none';
+
+        if (orders.length === 0) {
+          if (emptyEl) emptyEl.style.display = 'block';
+          if (listEl) listEl.style.display = 'none';
+          return;
+        }
+
+        if (emptyEl) emptyEl.style.display = 'none';
+        if (listEl) {
+          listEl.style.display = 'flex';
+          listEl.innerHTML = orders.map((order: any) => {
+            const dateStr = order.fecha ? new Date(order.fecha).toLocaleString('es-MX', {
+              dateStyle: 'medium',
+              timeStyle: 'short'
+            }) : 'Fecha reciente';
+
+            const statusClass = order.status === 'PAGADO' ? 'badge-success' : 'badge-warning';
+
+            const itemsHtml = (order.detalles || []).map((det: any) => `
+              <div class="order-item-row">
+                <div>
+                  <span class="order-item-title">${det.producto?.titulo || 'Libro'}</span>
+                  <span class="order-item-qty">× ${det.cantidad} un. ($${Number(det.precioUnitario).toFixed(2)})</span>
+                </div>
+                <span class="order-item-price">$${Number(det.subtotal).toFixed(2)} MXN</span>
+              </div>
+            `).join('');
+
+            return `
+              <div class="order-card card">
+                <div class="order-card-header">
+                  <div class="order-header-left">
+                    <span class="order-folio">${order.folio}</span>
+                    <span class="order-date">${dateStr}</span>
+                    <span class="badge ${statusClass}">${order.status}</span>
+                  </div>
+                  <div class="order-header-right">
+                    <span class="order-total-badge">$${Number(order.total).toFixed(2)} MXN</span>
+                    <a href="/orden-confirmada?folio=${order.folio}" class="btn btn-outline btn-sm" style="font-size:0.8rem; padding:0.25rem 0.5rem;">
+                      📄 Ver / Imprimir Comprobante
+                    </a>
+                  </div>
+                </div>
+
+                <div class="order-card-body">
+                  <div class="order-meta-grid">
+                    <div class="meta-col">
+                      <strong>Destinatario</strong>
+                      <span>${order.nombreCliente}</span>
+                    </div>
+                    <div class="meta-col">
+                      <strong>Dirección de Entrega</strong>
+                      <span>${order.direccionEnvio || 'Guadalajara, Jalisco'}</span>
+                    </div>
+                    <div class="meta-col">
+                      <strong>Método de Pago</strong>
+                      <span>${order.metodoPago.replace('_', ' ')}</span>
+                    </div>
+                    <div class="meta-col">
+                      <strong>Costo de Envío</strong>
+                      <span>${Number(order.envio) === 0 ? 'GRATIS' : `$${Number(order.envio).toFixed(2)} MXN`}</span>
+                    </div>
+                  </div>
+
+                  <h4 class="order-items-title">Libros incluidos en la orden:</h4>
+                  <div class="order-items-table">
+                    ${itemsHtml || '<p style="color:var(--color-text-muted); font-size:0.85rem;">Detalles registrados en almacén.</p>'}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err: any) {
+        if (loadingEl) {
+          loadingEl.innerHTML = `<p style="color:#ef4444;">No se pudieron cargar las órdenes: ${err.message}</p>`;
+        }
+      }
+    }
+
+    loadOrders();
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', loadOrders);
+    }
+  }
+</script>

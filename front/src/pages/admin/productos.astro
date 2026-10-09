@@ -1,0 +1,1306 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+const pageTitle = "Gestión de Libros e Inventario — Admin BiblioTech";
+---
+
+<BaseLayout pageTitle={pageTitle}>
+  <div class="admin-page">
+    <div class="container admin-container">
+
+      <!-- Verificación de Seguridad y Rol ADMIN (Bloque B - Protección de Ruta) -->
+      <div id="admin-auth-guard" class="card auth-guard-card" style="display: none;">
+        <div class="guard-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </div>
+        <h2 id="guard-title">Acceso Restringido para Administradores</h2>
+        <p id="guard-message">Debes iniciar sesión con una cuenta con rol de Administrador para acceder al panel de inventario y catálogo.</p>
+        <div class="guard-actions">
+          <a href="/login?redirect=/admin/productos" class="btn btn-primary" id="guard-login-btn">Iniciar Sesión como Admin</a>
+          <a href="/" class="btn btn-outline">Volver a la Tienda</a>
+        </div>
+      </div>
+
+      <!-- Panel Principal de Gestión de Productos (CRUD - Parte 4) -->
+      <div id="admin-products-view" style="display: none;">
+        
+        <!-- Header del Administrador -->
+        <div class="admin-header">
+          <div class="header-left">
+            <div class="breadcrumbs">
+              <a href="/admin">Panel Admin</a>
+              <span class="sep">/</span>
+              <span class="current">Catálogo e Inventario</span>
+            </div>
+            <h1>Gestión de Libros e Inventario</h1>
+            <p class="header-sub">Administra el catálogo completo, crea nuevos títulos, actualiza stock en tiempo real y edita información.</p>
+          </div>
+          <div class="header-actions">
+            <a href="/admin" class="btn btn-outline btn-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              Dashboard
+            </a>
+            <a href="/catalogo" target="_blank" class="btn btn-outline btn-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+              Ver Tienda Pública
+            </a>
+            <button id="btn-open-create-modal" class="btn btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Registrar Nuevo Libro
+            </button>
+          </div>
+        </div>
+
+        <!-- Barra de Métricas Rápidas -->
+        <div class="admin-stats-row">
+          <div class="stat-mini-card">
+            <span class="stat-mini-label">Total de Libros</span>
+            <span id="stat-total-books" class="stat-mini-val">0</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-label">Unidades en Inventario</span>
+            <span id="stat-total-stock" class="stat-mini-val">0</span>
+          </div>
+          <div class="stat-mini-card warning-stat">
+            <span class="stat-mini-label">Stock Bajo (≤ 5)</span>
+            <span id="stat-low-stock" class="stat-mini-val text-warning">0</span>
+          </div>
+          <div class="stat-mini-card danger-stat">
+            <span class="stat-mini-label">Agotados (0 stock)</span>
+            <span id="stat-out-stock" class="stat-mini-val text-danger">0</span>
+          </div>
+        </div>
+
+        <!-- Filtros y Barra de Búsqueda -->
+        <div class="card filter-bar-card">
+          <div class="filter-controls">
+            <div class="search-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="filter-search" class="form-input search-input" placeholder="Buscar por título, autor o ISBN..." />
+            </div>
+
+            <div class="select-group">
+              <select id="filter-category" class="form-select">
+                <option value="">Todas las Categorías</option>
+                <!-- Opciones dinámicas -->
+              </select>
+
+              <select id="filter-stock-status" class="form-select">
+                <option value="">Todo el Stock</option>
+                <option value="in_stock">En Existencia (&gt; 5)</option>
+                <option value="low_stock">Stock Bajo (1 a 5)</option>
+                <option value="out_of_stock">Agotados (0)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Productos / Libros -->
+        <div class="card table-card">
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th style="width: 70px;">Portada</th>
+                  <th>Título / Autor</th>
+                  <th>Categoría</th>
+                  <th>Precio</th>
+                  <th style="min-width: 170px;">Stock en Vivo</th>
+                  <th>Destacado</th>
+                  <th style="text-align: right; min-width: 130px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="products-table-body">
+                <tr>
+                  <td colspan="7" style="text-align:center; padding: 2.5rem; color: var(--color-text-muted);">
+                    Cargando catálogo desde GraphQL SQLite...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="table-empty-msg" style="display: none;" class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            <p>No se encontraron libros que coincidan con los filtros aplicados.</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: Crear / Editar Libro (CRUD Create & Update) -->
+  <div id="product-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modal-title">Registrar Nuevo Libro</h3>
+        <button id="modal-close-btn" class="modal-close" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      
+      <form id="product-form" class="modal-body">
+        <input type="hidden" id="form-product-id" value="" />
+
+        <div id="form-error-alert" class="alert-error" style="display: none;"></div>
+
+        <div class="form-grid">
+          <!-- Columna Izquierda: Datos Básicos -->
+          <div class="form-col-fields">
+            <div class="form-group">
+              <label class="form-label" for="form-titulo">Título del Libro *</label>
+              <input type="text" id="form-titulo" class="form-input" required placeholder="Ej. El Problema de los Tres Cuerpos" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="form-autor">Autor(a) *</label>
+              <input type="text" id="form-autor" class="form-input" required placeholder="Ej. Cixin Liu" />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group form-col">
+                <label class="form-label" for="form-categoria">Categoría *</label>
+                <select id="form-categoria" class="form-select" required>
+                  <!-- Cargado dinámicamente -->
+                </select>
+              </div>
+
+              <div class="form-group form-col">
+                <label class="form-label" for="form-isbn">ISBN / Código</label>
+                <input type="text" id="form-isbn" class="form-input" placeholder="978-8466659734" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group form-col">
+                <label class="form-label" for="form-precio">Precio ($ MXN) *</label>
+                <input type="number" id="form-precio" class="form-input" step="0.01" min="1" required placeholder="399.00" />
+              </div>
+
+              <div class="form-group form-col">
+                <label class="form-label" for="form-precio-ant">Precio Anterior ($)</label>
+                <input type="number" id="form-precio-ant" class="form-input" step="0.01" min="0" placeholder="450.00" />
+              </div>
+
+              <div class="form-group form-col">
+                <label class="form-label" for="form-stock">Stock Inicial *</label>
+                <input type="number" id="form-stock" class="form-input" min="0" required placeholder="15" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group form-col">
+                <label class="form-label" for="form-editorial">Editorial</label>
+                <input type="text" id="form-editorial" class="form-input" placeholder="Nova / Ediciones B" />
+              </div>
+
+              <div class="form-group form-col">
+                <label class="form-label" for="form-paginas">Páginas</label>
+                <input type="number" id="form-paginas" class="form-input" min="1" placeholder="416" />
+              </div>
+
+              <div class="form-group form-col">
+                <label class="form-label" for="form-rating">Calificación (1-5)</label>
+                <input type="number" id="form-rating" class="form-input" step="0.1" min="1" max="5" value="4.8" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna Derecha: Imagen y Extras -->
+          <div class="form-col-media">
+            <div class="form-group">
+              <label class="form-label" for="form-imagen">URL de la Portada</label>
+              <input type="url" id="form-imagen" class="form-input" placeholder="https://covers.openlibrary.org/..." />
+            </div>
+
+            <div class="image-preview-box">
+              <span class="preview-label">Previsualización de Portada:</span>
+              <div class="img-wrapper">
+                <img id="modal-img-preview" src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400" alt="Preview" />
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+              <label class="checkbox-label">
+                <input type="checkbox" id="form-destacado" />
+                <span class="checkbox-custom"></span>
+                <span style="font-weight: 600; font-size: 0.9rem;">Destacar en portada de tienda</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 0.5rem;">
+          <label class="form-label" for="form-descripcion">Sinopsis / Descripción del Libro</label>
+          <textarea id="form-descripcion" class="form-textarea" rows="3" placeholder="Resumen atractivo sobre la trama, contenido o temas principales..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btn-cancel-modal" class="btn btn-outline">Cancelar</button>
+          <button type="submit" id="btn-submit-product" class="btn btn-primary">
+            <span id="submit-btn-text">Guardar Libro</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Confirmar Eliminación (CRUD Delete) -->
+  <div id="delete-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog modal-dialog-sm">
+      <div class="modal-header">
+        <h3 style="color: #dc2626;">Confirmar Eliminación</h3>
+        <button id="delete-close-btn" class="modal-close" type="button">&times;</button>
+      </div>
+      <div class="modal-body" style="padding-top: 0.5rem;">
+        <p>¿Estás seguro de que deseas eliminar permanentemente este libro del catálogo?</p>
+        <div class="delete-book-target">
+          <strong id="delete-book-title">Título del Libro</strong>
+          <span id="delete-book-author" style="display:block; color:var(--color-text-muted); font-size:0.85rem;"></span>
+        </div>
+        <p style="font-size:0.82rem; color:#dc2626; margin-top:0.75rem;">Esta acción no se puede deshacer y retirará el producto del inventario.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-cancel-delete" class="btn btn-outline">Cancelar</button>
+        <button type="button" id="btn-confirm-delete" class="btn btn-danger">Eliminar Definitivamente</button>
+      </div>
+    </div>
+  </div>
+
+</BaseLayout>
+
+<style>
+  .admin-page {
+    padding: var(--spacing-xl) 0 var(--spacing-2xl);
+    min-height: 85vh;
+  }
+
+  /* Auth Guard */
+  .auth-guard-card {
+    max-width: 550px;
+    margin: 4rem auto;
+    text-align: center;
+    padding: 3rem 2rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .guard-icon {
+    color: #dc2626;
+    margin-bottom: 1rem;
+  }
+
+  .auth-guard-card h2 {
+    margin: 0 0 0.5rem 0;
+    color: var(--color-text);
+  }
+
+  .auth-guard-card p {
+    color: var(--color-text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .guard-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  /* Header */
+  .admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-lg);
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.35rem;
+  }
+
+  .breadcrumbs a {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+
+  .breadcrumbs a:hover {
+    text-decoration: underline;
+  }
+
+  .admin-header h1 {
+    font-size: 1.95rem;
+    font-weight: 800;
+    margin: 0 0 0.25rem 0;
+    color: var(--color-text);
+  }
+
+  .header-sub {
+    color: var(--color-text-muted);
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  /* Stats Row */
+  .admin-stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .stat-mini-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.15rem 1.25rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .stat-mini-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .stat-mini-val {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--color-text);
+  }
+
+  .text-warning { color: #d97706; }
+  .text-danger { color: #dc2626; }
+
+  /* Filters */
+  .filter-bar-card {
+    padding: 1rem 1.25rem;
+    margin-bottom: var(--spacing-lg);
+    background: var(--color-surface);
+  }
+
+  .filter-controls {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    position: relative;
+    flex: 1;
+    min-width: 260px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  .search-input {
+    padding-left: 2.5rem;
+  }
+
+  .select-group {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  /* Table */
+  .table-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.92rem;
+  }
+
+  .admin-table th {
+    background: #f8fafc;
+    padding: 0.9rem 1rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .admin-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+  }
+
+  .admin-table tr:hover td {
+    background-color: #f1f5f9;
+  }
+
+  .table-thumb {
+    width: 48px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background: #e2e8f0;
+  }
+
+  .book-title-cell strong {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--color-text);
+  }
+
+  .book-author-meta {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+  }
+
+  .book-isbn-meta {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  .price-cell {
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .price-old {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+    margin-left: 0.35rem;
+  }
+
+  /* Real-Time Stock Control */
+  .stock-controller {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .stock-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .stock-btn:hover {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+  }
+
+  .stock-num-badge {
+    font-weight: 700;
+    font-size: 0.85rem;
+    min-width: 32px;
+    text-align: center;
+    padding: 0.2rem 0.4rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .stock-badge-ok { background: #d1fae5; color: #065f46; }
+  .stock-badge-low { background: #fef3c7; color: #92400e; }
+  .stock-badge-out { background: #fee2e2; color: #991b1b; }
+
+  .actions-cell {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.4rem;
+  }
+
+  .action-icon-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .action-icon-btn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    transform: translateY(-1px);
+  }
+
+  .action-icon-btn.delete-btn:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3.5rem 1rem;
+    color: var(--color-text-muted);
+  }
+
+  .empty-state svg {
+    margin-bottom: 0.75rem;
+    color: #94a3b8;
+  }
+
+  /* Modals */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+
+  .modal-dialog {
+    background: var(--color-surface);
+    width: 100%;
+    max-width: 820px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    animation: modalPop 0.25s ease-out;
+  }
+
+  .modal-dialog-sm {
+    max-width: 480px;
+  }
+
+  @keyframes modalPop {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .modal-close {
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+    line-height: 1;
+    padding: 0.25rem;
+  }
+
+  .modal-close:hover {
+    color: var(--color-text);
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+    max-height: calc(85vh - 120px);
+    overflow-y: auto;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 1.5rem;
+  }
+
+  .image-preview-box {
+    background: var(--color-background);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    text-align: center;
+  }
+
+  .preview-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .image-preview-box .img-wrapper {
+    width: 100%;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background: #e2e8f0;
+  }
+
+  .image-preview-box img {
+    max-height: 100%;
+    object-fit: cover;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+
+  .modal-footer {
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    background: #f8fafc;
+  }
+
+  .delete-book-target {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    margin: 0.75rem 0;
+  }
+
+  .alert-error {
+    background-color: #fee2e2;
+    border: 1px solid #f87171;
+    color: #991b1b;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  import { authService } from '../../services/auth.js';
+  import { apiClient } from '../../services/apiClient.js';
+
+  // 1. Elementos del DOM
+  const authGuard = document.getElementById('admin-auth-guard') as HTMLElement;
+  const adminView = document.getElementById('admin-products-view') as HTMLElement;
+  const guardTitle = document.getElementById('guard-title') as HTMLElement;
+  const guardMessage = document.getElementById('guard-message') as HTMLElement;
+  const guardLoginBtn = document.getElementById('guard-login-btn') as HTMLElement;
+
+  const tableBody = document.getElementById('products-table-body') as HTMLElement;
+  const emptyMsg = document.getElementById('table-empty-msg') as HTMLElement;
+
+  const filterSearch = document.getElementById('filter-search') as HTMLInputElement;
+  const filterCategory = document.getElementById('filter-category') as HTMLSelectElement;
+  const filterStockStatus = document.getElementById('filter-stock-status') as HTMLSelectElement;
+
+  const statTotalBooks = document.getElementById('stat-total-books') as HTMLElement;
+  const statTotalStock = document.getElementById('stat-total-stock') as HTMLElement;
+  const statLowStock = document.getElementById('stat-low-stock') as HTMLElement;
+  const statOutStock = document.getElementById('stat-out-stock') as HTMLElement;
+
+  // Modals
+  const productModal = document.getElementById('product-modal') as HTMLElement;
+  const modalTitle = document.getElementById('modal-title') as HTMLElement;
+  const productForm = document.getElementById('product-form') as HTMLFormElement;
+  const formErrorAlert = document.getElementById('form-error-alert') as HTMLElement;
+  const modalCloseBtn = document.getElementById('modal-close-btn') as HTMLElement;
+  const btnCancelModal = document.getElementById('btn-cancel-modal') as HTMLElement;
+  const btnOpenCreate = document.getElementById('btn-open-create-modal') as HTMLElement;
+  const submitBtnText = document.getElementById('submit-btn-text') as HTMLElement;
+
+  const formProdId = document.getElementById('form-product-id') as HTMLInputElement;
+  const formTitulo = document.getElementById('form-titulo') as HTMLInputElement;
+  const formAutor = document.getElementById('form-autor') as HTMLInputElement;
+  const formCategoria = document.getElementById('form-categoria') as HTMLSelectElement;
+  const formIsbn = document.getElementById('form-isbn') as HTMLInputElement;
+  const formPrecio = document.getElementById('form-precio') as HTMLInputElement;
+  const formPrecioAnt = document.getElementById('form-precio-ant') as HTMLInputElement;
+  const formStock = document.getElementById('form-stock') as HTMLInputElement;
+  const formEditorial = document.getElementById('form-editorial') as HTMLInputElement;
+  const formPaginas = document.getElementById('form-paginas') as HTMLInputElement;
+  const formRating = document.getElementById('form-rating') as HTMLInputElement;
+  const formImagen = document.getElementById('form-imagen') as HTMLInputElement;
+  const modalImgPreview = document.getElementById('modal-img-preview') as HTMLImageElement;
+  const formDestacado = document.getElementById('form-destacado') as HTMLInputElement;
+  const formDescripcion = document.getElementById('form-descripcion') as HTMLTextAreaElement;
+
+  // Delete Modal
+  const deleteModal = document.getElementById('delete-modal') as HTMLElement;
+  const deleteCloseBtn = document.getElementById('delete-close-btn') as HTMLElement;
+  const btnCancelDelete = document.getElementById('btn-cancel-delete') as HTMLElement;
+  const btnConfirmDelete = document.getElementById('btn-confirm-delete') as HTMLElement;
+  const deleteBookTitle = document.getElementById('delete-book-title') as HTMLElement;
+  const deleteBookAuthor = document.getElementById('delete-book-author') as HTMLElement;
+
+  // Estado Local
+  let allProducts: any[] = [];
+  let allCategories: any[] = [];
+  let pendingDeleteId: string | null = null;
+
+  // 2. Verificación de Seguridad y Rol ADMIN (Bloque B - Parte 3)
+  function checkAdminAccess() {
+    if (!authService.isAuthenticated()) {
+      if (authGuard) authGuard.style.display = 'block';
+      if (adminView) adminView.style.display = 'none';
+      if (guardTitle) guardTitle.textContent = 'Acceso Restringido: Inicia Sesión';
+      if (guardMessage) guardMessage.textContent = 'Se requiere autenticación con privilegios de Administrador para gestionar libros e inventario.';
+      return false;
+    }
+
+    const user = authService.getUser();
+    if (!user || user.rol !== 'ADMIN') {
+      if (authGuard) authGuard.style.display = 'block';
+      if (adminView) adminView.style.display = 'none';
+      if (guardTitle) guardTitle.textContent = 'Acceso Denegado: Rol no Autorizado';
+      if (guardMessage) guardMessage.textContent = `Hola ${user?.nombre || 'Usuario'}. Tu cuenta tiene rol "${user?.rol || 'CLIENTE'}". Esta sección está reservada exclusivamente para Administradores de BiblioTech.`;
+      if (guardLoginBtn) {
+        guardLoginBtn.textContent = 'Cambiar de Cuenta';
+        guardLoginBtn.setAttribute('href', '/login?redirect=/admin/productos');
+      }
+      return false;
+    }
+
+    if (authGuard) authGuard.style.display = 'none';
+    if (adminView) adminView.style.display = 'block';
+    return true;
+  }
+
+  // 3. Cargar Datos desde GraphQL
+  async function loadData() {
+    const query = `
+      query GetAdminCatalogData {
+        categorias {
+          id
+          nombre
+          slug
+        }
+        productos {
+          id
+          titulo
+          autor
+          isbn
+          editorial
+          precio
+          precioAnterior
+          imagen
+          categoriaId
+          stock
+          descripcion
+          paginas
+          rating
+          resenasCount
+          destacado
+          categoria {
+            id
+            nombre
+          }
+        }
+      }
+    `;
+
+    try {
+      const res = await apiClient.query(query);
+      allCategories = res?.categorias || [];
+      allProducts = res?.productos || [];
+
+      populateCategorySelects();
+      updateStats();
+      renderTable();
+    } catch (err: any) {
+      console.error('[Admin] Error cargando catálogo:', err);
+      if (tableBody) {
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#dc2626;">Error cargando datos: ${err.message}</td></tr>`;
+      }
+    }
+  }
+
+  function populateCategorySelects() {
+    // Select de Filtro
+    if (filterCategory) {
+      const currentVal = filterCategory.value;
+      filterCategory.innerHTML = '<option value="">Todas las Categorías</option>' + 
+        allCategories.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+      filterCategory.value = currentVal;
+    }
+
+    // Select del Modal Form
+    if (formCategoria) {
+      formCategoria.innerHTML = '<option value="" disabled selected>Selecciona una categoría...</option>' + 
+        allCategories.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    }
+  }
+
+  function updateStats() {
+    const total = allProducts.length;
+    const totalUnits = allProducts.reduce((acc, p) => acc + (Number(p.stock) || 0), 0);
+    const low = allProducts.filter(p => Number(p.stock) > 0 && Number(p.stock) <= 5).length;
+    const out = allProducts.filter(p => Number(p.stock) <= 0).length;
+
+    if (statTotalBooks) statTotalBooks.textContent = total.toString();
+    if (statTotalStock) statTotalStock.textContent = totalUnits.toLocaleString();
+    if (statLowStock) statLowStock.textContent = low.toString();
+    if (statOutStock) statOutStock.textContent = out.toString();
+  }
+
+  // 4. Renderizado de la Tabla y Filtros
+  function renderTable() {
+    if (!tableBody) return;
+
+    const searchTerm = (filterSearch?.value || '').toLowerCase().trim();
+    const catId = filterCategory?.value || '';
+    const stockStatus = filterStockStatus?.value || '';
+
+    const filtered = allProducts.filter(p => {
+      // Filtro texto
+      if (searchTerm) {
+        const titleMatch = (p.titulo || '').toLowerCase().includes(searchTerm);
+        const authorMatch = (p.autor || '').toLowerCase().includes(searchTerm);
+        const isbnMatch = (p.isbn || '').toLowerCase().includes(searchTerm);
+        if (!titleMatch && !authorMatch && !isbnMatch) return false;
+      }
+
+      // Filtro categoría
+      if (catId && String(p.categoriaId) !== String(catId)) {
+        return false;
+      }
+
+      // Filtro estado stock
+      if (stockStatus === 'in_stock' && Number(p.stock) <= 5) return false;
+      if (stockStatus === 'low_stock' && (Number(p.stock) <= 0 || Number(p.stock) > 5)) return false;
+      if (stockStatus === 'out_of_stock' && Number(p.stock) > 0) return false;
+
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tableBody.innerHTML = '';
+      if (emptyMsg) emptyMsg.style.display = 'block';
+      return;
+    }
+
+    if (emptyMsg) emptyMsg.style.display = 'none';
+
+    tableBody.innerHTML = filtered.map(p => {
+      const stock = Number(p.stock) || 0;
+      let badgeClass = 'stock-badge-ok';
+      let stockLabel = `${stock} un.`;
+
+      if (stock === 0) {
+        badgeClass = 'stock-badge-out';
+        stockLabel = 'Agotado (0)';
+      } else if (stock <= 5) {
+        badgeClass = 'stock-badge-low';
+        stockLabel = `Bajo (${stock})`;
+      }
+
+      const catName = p.categoria?.nombre || allCategories.find(c => String(c.id) === String(p.categoriaId))?.nombre || 'General';
+      const imgSrc = p.imagen || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200';
+
+      return `
+        <tr data-id="${p.id}">
+          <td>
+            <img src="${imgSrc}" alt="${p.titulo}" class="table-thumb" onerror="this.src='https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200'" />
+          </td>
+          <td class="book-title-cell">
+            <strong>${p.titulo}</strong>
+            <span class="book-author-meta">${p.autor}</span>
+            ${p.isbn ? `<span class="book-isbn-meta">ISBN: ${p.isbn}</span>` : ''}
+          </td>
+          <td>
+            <span class="badge badge-primary">${catName}</span>
+          </td>
+          <td class="price-cell">
+            $${Number(p.precio).toFixed(2)}
+            ${p.precioAnterior ? `<span class="price-old">$${Number(p.precioAnterior).toFixed(2)}</span>` : ''}
+          </td>
+          <td>
+            <div class="stock-controller">
+              <button class="stock-btn btn-stock-dec" data-id="${p.id}" title="Disminuir 1 unidad">-</button>
+              <span class="stock-num-badge ${badgeClass}" id="stock-badge-${p.id}">${stockLabel}</span>
+              <button class="stock-btn btn-stock-inc" data-id="${p.id}" title="Aumentar 1 unidad">+</button>
+            </div>
+          </td>
+          <td>
+            ${p.destacado ? '<span class="badge badge-success">⭐ Destacado</span>' : '<span style="color:#94a3b8; font-size:0.8rem;">Estándar</span>'}
+          </td>
+          <td class="actions-cell">
+            <button class="action-icon-btn btn-edit-product" data-id="${p.id}" title="Editar Libro">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </button>
+            <button class="action-icon-btn delete-btn btn-delete-product" data-id="${p.id}" title="Eliminar Libro">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    attachTableEvents();
+  }
+
+  // 5. Eventos de la Tabla (Ajuste rápido de Stock, Editar, Eliminar)
+  function attachTableEvents() {
+    // Incrementar stock
+    document.querySelectorAll('.btn-stock-inc').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const prod = allProducts.find(p => String(p.id) === String(id));
+        if (!prod) return;
+        const newStock = (Number(prod.stock) || 0) + 1;
+        await updateQuickStock(id!, newStock);
+      });
+    });
+
+    // Disminuir stock
+    document.querySelectorAll('.btn-stock-dec').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const prod = allProducts.find(p => String(p.id) === String(id));
+        if (!prod || Number(prod.stock) <= 0) return;
+        const newStock = (Number(prod.stock) || 0) - 1;
+        await updateQuickStock(id!, newStock);
+      });
+    });
+
+    // Editar
+    document.querySelectorAll('.btn-edit-product').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const prod = allProducts.find(p => String(p.id) === String(id));
+        if (prod) openEditModal(prod);
+      });
+    });
+
+    // Eliminar
+    document.querySelectorAll('.btn-delete-product').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const prod = allProducts.find(p => String(p.id) === String(id));
+        if (prod) openDeleteModal(prod);
+      });
+    });
+  }
+
+  // Ajuste rápido de stock en BD vía GraphQL
+  async function updateQuickStock(id: string, newStock: number) {
+    const mutation = `
+      mutation AdminUpdateStock($id: ID!, $stock: Int!) {
+        actualizarStock(id: $id, stock: $stock) {
+          id
+          stock
+        }
+      }
+    `;
+
+    try {
+      const res = await apiClient.mutation(mutation, { id, stock: newStock });
+      if (res?.actualizarStock) {
+        const prod = allProducts.find(p => String(p.id) === String(id));
+        if (prod) prod.stock = newStock;
+        updateStats();
+        renderTable();
+        if ((window as any).showToast) {
+          (window as any).showToast(`Stock actualizado: ${newStock} unidades`, 'success');
+        }
+      }
+    } catch (err: any) {
+      if ((window as any).showToast) {
+        (window as any).showToast(`Error al actualizar stock: ${err.message}`, 'error');
+      }
+    }
+  }
+
+  // 6. Modal de Crear / Editar Libro
+  function openCreateModal() {
+    if (productForm) productForm.reset();
+    if (formProdId) formProdId.value = '';
+    if (modalTitle) modalTitle.textContent = 'Registrar Nuevo Libro';
+    if (submitBtnText) submitBtnText.textContent = 'Crear Libro en Catálogo';
+    if (formErrorAlert) formErrorAlert.style.display = 'none';
+    if (modalImgPreview) modalImgPreview.src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400';
+    if (formRating) formRating.value = '4.8';
+    if (productModal) productModal.style.display = 'flex';
+  }
+
+  function openEditModal(prod: any) {
+    if (productForm) productForm.reset();
+    if (formProdId) formProdId.value = prod.id;
+    if (modalTitle) modalTitle.textContent = `Editar Libro: ${prod.titulo}`;
+    if (submitBtnText) submitBtnText.textContent = 'Guardar Cambios';
+    if (formErrorAlert) formErrorAlert.style.display = 'none';
+
+    if (formTitulo) formTitulo.value = prod.titulo || '';
+    if (formAutor) formAutor.value = prod.autor || '';
+    if (formCategoria) formCategoria.value = prod.categoriaId || '';
+    if (formIsbn) formIsbn.value = prod.isbn || '';
+    if (formPrecio) formPrecio.value = prod.precio || '';
+    if (formPrecioAnt) formPrecioAnt.value = prod.precioAnterior || '';
+    if (formStock) formStock.value = prod.stock || '0';
+    if (formEditorial) formEditorial.value = prod.editorial || '';
+    if (formPaginas) formPaginas.value = prod.paginas || '';
+    if (formRating) formRating.value = prod.rating || '4.8';
+    if (formImagen) formImagen.value = prod.imagen || '';
+    if (modalImgPreview) modalImgPreview.src = prod.imagen || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400';
+    if (formDestacado) formDestacado.checked = Boolean(prod.destacado);
+    if (formDescripcion) formDescripcion.value = prod.descripcion || '';
+
+    if (productModal) productModal.style.display = 'flex';
+  }
+
+  function closeModal() {
+    if (productModal) productModal.style.display = 'none';
+  }
+
+  // Previsualización en vivo de la imagen
+  if (formImagen && modalImgPreview) {
+    formImagen.addEventListener('input', () => {
+      const url = formImagen.value.trim();
+      modalImgPreview.src = url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400';
+    });
+  }
+
+  // Guardar Producto (Create / Update)
+  if (productForm) {
+    productForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (formErrorAlert) formErrorAlert.style.display = 'none';
+
+      const id = formProdId?.value;
+      const isEditing = Boolean(id);
+
+      const datos = {
+        titulo: formTitulo.value.trim(),
+        autor: formAutor.value.trim(),
+        categoriaId: formCategoria.value,
+        precio: parseFloat(formPrecio.value),
+        precioAnterior: formPrecioAnt.value ? parseFloat(formPrecioAnt.value) : null,
+        stock: parseInt(formStock.value, 10) || 0,
+        isbn: formIsbn.value.trim() || null,
+        editorial: formEditorial.value.trim() || null,
+        paginas: formPaginas.value ? parseInt(formPaginas.value, 10) : 300,
+        rating: formRating.value ? parseFloat(formRating.value) : 4.8,
+        imagen: formImagen.value.trim() || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600',
+        destacado: formDestacado.checked,
+        descripcion: formDescripcion.value.trim() || ''
+      };
+
+      const btnSubmit = document.getElementById('btn-submit-product') as HTMLButtonElement;
+      if (btnSubmit) btnSubmit.disabled = true;
+
+      try {
+        if (isEditing) {
+          // Mutación Actualizar
+          const updateMutation = `
+            mutation AdminActualizarProducto($id: ID!, $datos: ProductoInput!) {
+              actualizarProducto(id: $id, datos: $datos) {
+                id
+                titulo
+                autor
+                isbn
+                editorial
+                precio
+                precioAnterior
+                imagen
+                categoriaId
+                stock
+                descripcion
+                paginas
+                rating
+                destacado
+                categoria {
+                  id
+                  nombre
+                }
+              }
+            }
+          `;
+          const res = await apiClient.mutation(updateMutation, { id, datos });
+          if (res?.actualizarProducto) {
+            const index = allProducts.findIndex(p => String(p.id) === String(id));
+            if (index !== -1) allProducts[index] = res.actualizarProducto;
+            if ((window as any).showToast) (window as any).showToast('¡Libro actualizado con éxito!', 'success');
+          }
+        } else {
+          // Mutación Crear
+          const createMutation = `
+            mutation AdminCrearProducto($datos: ProductoInput!) {
+              crearProducto(datos: $datos) {
+                id
+                titulo
+                autor
+                isbn
+                editorial
+                precio
+                precioAnterior
+                imagen
+                categoriaId
+                stock
+                descripcion
+                paginas
+                rating
+                destacado
+                categoria {
+                  id
+                  nombre
+                }
+              }
+            }
+          `;
+          const res = await apiClient.mutation(createMutation, { datos });
+          if (res?.crearProducto) {
+            allProducts.unshift(res.crearProducto);
+            if ((window as any).showToast) (window as any).showToast('¡Nuevo libro creado en el catálogo!', 'success');
+          }
+        }
+
+        closeModal();
+        updateStats();
+        renderTable();
+      } catch (err: any) {
+        if (formErrorAlert) {
+          formErrorAlert.textContent = `Error: ${err.message}`;
+          formErrorAlert.style.display = 'block';
+        }
+      } finally {
+        if (btnSubmit) btnSubmit.disabled = false;
+      }
+    });
+  }
+
+  // 7. Modal de Confirmar Eliminación (Delete)
+  function openDeleteModal(prod: any) {
+    pendingDeleteId = prod.id;
+    if (deleteBookTitle) deleteBookTitle.textContent = prod.titulo;
+    if (deleteBookAuthor) deleteBookAuthor.textContent = `Autor: ${prod.autor} | ID: ${prod.id}`;
+    if (deleteModal) deleteModal.style.display = 'flex';
+  }
+
+  function closeDeleteModal() {
+    pendingDeleteId = null;
+    if (deleteModal) deleteModal.style.display = 'none';
+  }
+
+  if (btnConfirmDelete) {
+    btnConfirmDelete.addEventListener('click', async () => {
+      if (!pendingDeleteId) return;
+
+      const mutation = `
+        mutation AdminEliminarProducto($id: ID!) {
+          eliminarProducto(id: $id)
+        }
+      `;
+
+      btnConfirmDelete.textContent = 'Eliminando...';
+      btnConfirmDelete.setAttribute('disabled', 'true');
+
+      try {
+        const res = await apiClient.mutation(mutation, { id: pendingDeleteId });
+        if (res?.eliminarProducto) {
+          allProducts = allProducts.filter(p => String(p.id) !== String(pendingDeleteId));
+          if ((window as any).showToast) {
+            (window as any).showToast('Libro eliminado correctamente del catálogo', 'info');
+          }
+          closeDeleteModal();
+          updateStats();
+          renderTable();
+        } else {
+          throw new Error('No se pudo completar la eliminación.');
+        }
+      } catch (err: any) {
+        if ((window as any).showToast) {
+          (window as any).showToast(`Error: ${err.message}`, 'error');
+        }
+      } finally {
+        btnConfirmDelete.textContent = 'Eliminar Definitivamente';
+        btnConfirmDelete.removeAttribute('disabled');
+      }
+    });
+  }
+
+  // 8. Listeners de Filtros y Modales
+  if (btnOpenCreate) btnOpenCreate.addEventListener('click', openCreateModal);
+  if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
+  if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
+  if (deleteCloseBtn) deleteCloseBtn.addEventListener('click', closeDeleteModal);
+  if (btnCancelDelete) btnCancelDelete.addEventListener('click', closeDeleteModal);
+
+  if (filterSearch) filterSearch.addEventListener('input', renderTable);
+  if (filterCategory) filterCategory.addEventListener('change', renderTable);
+  if (filterStockStatus) filterStockStatus.addEventListener('change', renderTable);
+
+  // Cerrar modales al hacer clic afuera
+  window.addEventListener('click', (e) => {
+    if (e.target === productModal) closeModal();
+    if (e.target === deleteModal) closeDeleteModal();
+  });
+
+  // 9. Inicialización
+  if (checkAdminAccess()) {
+    loadData();
+
+    // Si viene con parametro ?action=new abrimos el modal de crear directamente
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'new') {
+      setTimeout(openCreateModal, 400);
+    }
+  }
+</script>

@@ -1,48 +1,528 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-const pageTitle = "Inicio";
+import { fetchCatalogData } from '../services/productsData.js';
+
+const pageTitle = "BiblioTech Store — Librería Universitaria y E-Commerce Fullstack";
+const { categorias, productos } = await fetchCatalogData();
+
+const featuredBooks = productos.filter((p) => p.destacado).slice(0, 4);
 ---
 
 <BaseLayout pageTitle={pageTitle}>
-  <section class="hero">
-    <div class="container">
-      <h1>Bienvenido a E-Commerce</h1>
-      <p>
-        Encuentra productos, consulta tus órdenes y administra tu carrito.
-      </p>
+  
+  <!-- Hero Principal -->
+  <section class="home-hero">
+    <div class="container hero-container">
+      <div class="hero-content">
+        <span class="badge badge-primary hero-badge">Proyecto Integrador Web II — CETI Colomos</span>
+        <h1 class="hero-title">
+          Tu Próxima Gran Lectura Comienza en <span class="text-gradient">BiblioTech</span>
+        </h1>
+        <p class="hero-description">
+          Plataforma e-commerce moderna desarrollada con Astro, Single Page Architecture, cliente GraphQL con autenticación Bearer token y base de datos relacional SQLite.
+        </p>
 
-      <a href="/catalogo" class="button">
-        Ver catálogo
-      </a>
+        <div class="hero-actions">
+          <a href="/catalogo" class="btn btn-primary btn-lg">
+            <span>Explorar Catálogo Completo</span> &rarr;
+          </a>
+          <a href="/registro" class="btn btn-outline btn-lg">
+            <span>Crear Cuenta Gratis</span>
+          </a>
+        </div>
+
+        <div class="hero-features">
+          <div class="feat-item">
+            <span class="feat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg></span>
+            <span>Envío Gratis desde $999</span>
+          </div>
+          <div class="feat-item">
+            <span class="feat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
+            <span>Auth Segura Bearer Token</span>
+          </div>
+          <div class="feat-item">
+            <span class="feat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span>
+            <span>GraphQL Backend Dual</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-book-stack">
+          <img 
+            src="https://covers.openlibrary.org/b/isbn/9780441172719-L.jpg" 
+            alt="Dune" 
+            class="stack-img stack-1"
+          />
+          <img 
+            src="https://covers.openlibrary.org/b/isbn/9780735211292-L.jpg" 
+            alt="Hábitos Atómicos" 
+            class="stack-img stack-2"
+          />
+          <img 
+            src="https://covers.openlibrary.org/b/isbn/9780307743657-L.jpg" 
+            alt="El Resplandor" 
+            class="stack-img stack-3"
+          />
+        </div>
+      </div>
     </div>
   </section>
+
+  <!-- Categorías Destacadas -->
+  <section class="section categories-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Explora por Categoría</h2>
+        <p>Encuentra títulos clasificados por género literario y especialidad técnica</p>
+      </div>
+
+      <div class="categories-grid">
+        {categorias.map((cat) => {
+          const count = productos.filter((p) => String(p.categoriaId) === String(cat.id)).length;
+          return (
+            <a href="/catalogo" class="card cat-card">
+              <span class="cat-pill" style="align-self:flex-start; font-weight:700; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--color-primary); background:#e0f2fe; padding:0.2rem 0.5rem; border-radius:4px; margin-bottom:0.75rem;">Colección</span>
+              <h3>{cat.nombre}</h3>
+              <p>{cat.descripcion}</p>
+              <span class="cat-footer">{count} títulos disponibles &rarr;</span>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+
+  <!-- Libros Destacados -->
+  <section class="section featured-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <h2>Títulos Destacados</h2>
+          <p>Obras aclamadas por la crítica y favoritas de la comunidad de lectores</p>
+        </div>
+        <a href="/catalogo" class="btn btn-outline btn-sm">Ver todo el catálogo (15)</a>
+      </div>
+
+      <div class="featured-grid">
+        {featuredBooks.map((book) => {
+          const cat = categorias.find((c) => String(c.id) === String(book.categoriaId));
+          return (
+            <article class="card book-card-home">
+              <div class="book-card-home__media">
+                <img src={book.imagen} alt={book.titulo} loading="lazy" />
+                <span class="badge badge-primary home-badge">{cat ? cat.nombre : 'Libro'}</span>
+              </div>
+              <div class="book-card-home__body">
+                <span class="book-author">{book.autor}</span>
+                <h4><a href={`/producto/${book.id}`}>{book.titulo}</a></h4>
+                <div class="book-rating">
+                  <span>Rating: {book.rating} / 5</span>
+                  <span class="reviews-num">({book.resenasCount} reseñas)</span>
+                </div>
+                <div class="book-price-row">
+                  <span class="home-price">${book.precio.toFixed(2)} MXN</span>
+                  <a href={`/producto/${book.id}`} class="btn btn-primary btn-sm">Ver Detalle</a>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+
+  <!-- Responsabilidades del Equipo (Integrador) -->
+  <section class="section team-section">
+    <div class="container">
+      <div class="card team-card">
+        <div class="team-header">
+          <h3>Arquitectura Modular y Equipo de Desarrollo</h3>
+          <p>División de responsabilidades conforme al cronograma de entrega del proyecto integrador:</p>
+        </div>
+
+        <div class="team-grid">
+          <div class="team-step">
+            <span class="step-badge">Paso 1</span>
+            <strong>Alan Omar Yáñez (Pollo)</strong>
+            <span>Arquitectura Base, Layouts Globales y Cliente API con Bearer Token</span>
+          </div>
+
+          <div class="team-step">
+            <span class="step-badge">Paso 2</span>
+            <strong>Rafael Pérez Velázquez (Rafa)</strong>
+            <span>Sistema de Autenticación (Login/Registro), Sesión y Protección de Rutas</span>
+          </div>
+
+          <div class="team-step">
+            <span class="step-badge">Paso 3</span>
+            <strong>Hugo Emmanuel Covarrubias (Hugo)</strong>
+            <span>Catálogo de Productos, Filtros Reactivos y Vista Dinámica de Detalle</span>
+          </div>
+
+          <div class="team-step">
+            <span class="step-badge">Paso 4</span>
+            <strong>Héctor Emiliano Reyes (Emmy)</strong>
+            <span>Carrito de Compras, Flujo de Checkout/Órdenes y Reporte en el Blog</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
 </BaseLayout>
 
 <style>
-  .hero {
-    padding: var(--spacing-2xl) 0;
+  /* Hero */
+  .home-hero {
+    padding: var(--spacing-2xl) 0 var(--spacing-xl);
+    background: linear-gradient(180deg, rgba(239, 246, 255, 0.6) 0%, rgba(248, 250, 252, 0) 100%);
   }
 
-  .hero h1 {
-    margin-top: 0;
+  .hero-container {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: var(--spacing-2xl);
+    align-items: center;
+  }
+
+  .hero-badge {
     margin-bottom: var(--spacing-md);
   }
 
-  .hero p {
+  .hero-title {
+    font-size: 2.75rem;
+    font-weight: 800;
+    line-height: 1.15;
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--color-text);
+  }
+
+  .text-gradient {
+    color: var(--color-primary);
+  }
+
+  .hero-description {
+    font-size: 1.1rem;
     color: var(--color-text-muted);
-    margin-bottom: var(--spacing-lg);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-xl);
+    max-width: 580px;
   }
 
-  .button {
-    display: inline-block;
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-md);
-    background-color: var(--color-primary);
-    color: white;
+  .hero-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-2xl);
+    flex-wrap: wrap;
+  }
+
+  .hero-features {
+    display: flex;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .feat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
     font-weight: 600;
+    color: var(--color-text);
   }
 
-  .button:hover {
-    background-color: var(--color-primary-dark);
+  /* Visual Stack */
+  .hero-visual {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 380px;
+  }
+
+  .hero-book-stack {
+    position: relative;
+    width: 280px;
+    height: 340px;
+  }
+
+  .stack-img {
+    position: absolute;
+    height: 260px;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+    transition: transform 0.3s ease;
+  }
+
+  .stack-1 {
+    top: 20px;
+    left: 40px;
+    z-index: 3;
+  }
+
+  .stack-2 {
+    top: 50px;
+    left: 100px;
+    z-index: 2;
+    transform: rotate(6deg);
+    opacity: 0.9;
+  }
+
+  .stack-3 {
+    top: 0px;
+    left: 0px;
+    z-index: 1;
+    transform: rotate(-6deg);
+    opacity: 0.8;
+  }
+
+  .hero-book-stack:hover .stack-1 {
+    transform: translateY(-5px);
+  }
+
+  .hero-book-stack:hover .stack-2 {
+    transform: rotate(10deg) translate(10px, 5px);
+  }
+
+  .hero-book-stack:hover .stack-3 {
+    transform: rotate(-10deg) translate(-10px, -5px);
+  }
+
+  /* Sections */
+  .section {
+    padding: var(--spacing-2xl) 0;
+  }
+
+  .section-header {
+    margin-bottom: var(--spacing-xl);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+  }
+
+  .section-header h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.85rem;
+  }
+
+  .section-header p {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+
+  /* Categories */
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--spacing-lg);
+  }
+
+  .cat-card {
+    padding: var(--spacing-lg);
+    background: var(--color-surface);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .cat-card:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-3px);
+  }
+
+  .cat-icon-large {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .cat-card h3 {
+    margin: 0 0 0.4rem 0;
+    font-size: 1.15rem;
+  }
+
+  .cat-card p {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--spacing-md) 0;
+    line-height: 1.4;
+    flex: 1;
+  }
+
+  .cat-footer {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  /* Featured Grid */
+  .featured-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--spacing-lg);
+  }
+
+  .book-card-home {
+    background: var(--color-surface);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .book-card-home__media {
+    position: relative;
+    height: 240px;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .book-card-home__media img {
+    max-height: 200px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+    transition: transform 0.2s ease;
+  }
+
+  .book-card-home:hover .book-card-home__media img {
+    transform: scale(1.05);
+  }
+
+  .home-badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    font-size: 0.72rem;
+  }
+
+  .book-card-home__body {
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .book-author {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+  }
+
+  .book-card-home__body h4 {
+    margin: 0.2rem 0 0.4rem 0;
+    font-size: 1.05rem;
+    min-height: 2.6rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .book-rating {
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  .reviews-num {
+    color: var(--color-text-muted);
+    font-weight: normal;
+  }
+
+  .book-price-row {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .home-price {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--color-primary);
+  }
+
+  /* Team Section */
+  .team-section {
+    padding-bottom: var(--spacing-2xl);
+  }
+
+  .team-card {
+    padding: var(--spacing-xl);
+    background: #0f172a;
+    color: white;
+    border-radius: var(--radius-lg);
+  }
+
+  .team-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .team-header h3 {
+    margin: 0 0 0.35rem 0;
+    font-size: 1.4rem;
+  }
+
+  .team-header p {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 0.95rem;
+  }
+
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: var(--spacing-md);
+  }
+
+  .team-step {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .step-badge {
+    display: inline-block;
+    width: fit-content;
+    background: var(--color-primary);
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+  }
+
+  .team-step strong {
+    font-size: 0.95rem;
+    color: #f8fafc;
+  }
+
+  .team-step span:last-child {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 900px) {
+    .hero-container {
+      grid-template-columns: 1fr;
+    }
+
+    .hero-visual {
+      display: none;
+    }
+
+    .hero-title {
+      font-size: 2.2rem;
+    }
   }
 </style>

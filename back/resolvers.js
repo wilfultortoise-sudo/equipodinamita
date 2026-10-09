@@ -20,8 +20,17 @@ export const resolvers = {
     usuario: (_, { id }) => {
       return dbRepo.getUsuarioById(id);
     },
+    me: (_, __, context) => {
+      return context?.currentUser || null;
+    },
     pedidos: () => {
       return dbRepo.getPedidos();
+    },
+    misPedidos: (_, __, context) => {
+      if (!context?.currentUser) {
+        throw new Error('No autorizado: debe iniciar sesión para consultar sus órdenes.');
+      }
+      return dbRepo.getPedidosByUsuarioId(context.currentUser.id);
     },
     pedido: (_, { id }) => {
       return dbRepo.getPedidoById(id);
@@ -63,16 +72,31 @@ export const resolvers = {
   },
 
   Mutation: {
+    login: (_, { email, password }) => {
+      return dbRepo.loginUsuario(email, password);
+    },
+    registro: (_, { nombre, email, password, telefono, direccion }) => {
+      return dbRepo.registroUsuario({ nombre, email, password, telefono, direccion });
+    },
     crearProducto: (_, { datos }) => {
       return dbRepo.crearProducto(datos);
     },
     actualizarProducto: (_, { id, datos }) => {
       return dbRepo.actualizarProducto(id, datos);
     },
+    actualizarStock: (_, { id, stock }) => {
+      return dbRepo.actualizarStock(id, stock);
+    },
     eliminarProducto: (_, { id }) => {
       return dbRepo.eliminarProducto(id);
     },
-    crearPedido: (_, { datos }) => {
+    crearPedido: (_, { datos }, context) => {
+      // Si hay usuario logueado en el contexto y no venia usuarioId, lo asignamos
+      if (context?.currentUser) {
+        datos.usuarioId = datos.usuarioId || context.currentUser.id;
+        if (!datos.nombreCliente) datos.nombreCliente = context.currentUser.nombre;
+        if (!datos.emailCliente) datos.emailCliente = context.currentUser.email;
+      }
       return dbRepo.crearPedido(datos);
     },
     actualizarEstadoPedido: (_, { id, status }) => {

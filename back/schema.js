@@ -130,6 +130,12 @@ export const typeDefs = `#graphql
     usuarioId: ID
   }
 
+  """Respuesta de autenticacion con token Bearer y datos del usuario"""
+  type AuthPayload {
+    token: String!
+    usuario: Usuario!
+  }
+
   type Query {
     """Obtiene libros con filtros opcionales de categoria, busqueda y paginacion"""
     productos(categoriaId: ID, busqueda: String, limite: Int, desde: Int): [Producto!]!
@@ -149,19 +155,34 @@ export const typeDefs = `#graphql
     """Obtiene un usuario por ID"""
     usuario(id: ID!): Usuario
 
+    """Obtiene el usuario actualmente autenticado mediante el Bearer token"""
+    me: Usuario
+
     """Obtiene la lista de pedidos registrados"""
     pedidos: [Pedido!]!
+
+    """Obtiene los pedidos del usuario autenticado"""
+    misPedidos: [Pedido!]!
 
     """Obtiene un pedido especifico por ID o folio"""
     pedido(id: ID!): Pedido
   }
 
   type Mutation {
+    """Inicia sesion con credenciales y devuelve el token Bearer"""
+    login(email: String!, password: String!): AuthPayload!
+
+    """Registra una nueva cuenta de usuario y devuelve el token Bearer"""
+    registro(nombre: String!, email: String!, password: String!, telefono: String, direccion: String): AuthPayload!
+
     """Crea un nuevo libro en el catalogo (CRUD Create)"""
     crearProducto(datos: ProductoInput!): Producto!
 
     """Actualiza la informacion de un libro (CRUD Update)"""
     actualizarProducto(id: ID!, datos: ProductoInput!): Producto!
+
+    """Actualiza rapidamente el stock de un libro en inventario"""
+    actualizarStock(id: ID!, stock: Int!): Producto!
 
     """Elimina un libro del catalogo (CRUD Delete)"""
     eliminarProducto(id: ID!): Boolean!

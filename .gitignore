@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+front/node_modules/
+back/node_modules/
+
+# Production build outputs
+dist/
+front/dist/
+.astro/
+front/.astro/
+
+# Environment files
+.env
+.env.production
+.env.local
+
+# Database temporary files
+*.db-journal
+
+# OS generated files
+.DS_Store
+Thumbs.db
