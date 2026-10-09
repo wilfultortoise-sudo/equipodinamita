@@ -2,7 +2,7 @@ import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { typeDefs } from './schema.js';
 import { resolvers } from './resolvers.js';
-import { initDB } from './db.js';
+import { initDB, dbRepo, verifyToken } from './db.js';
 
 // Inicializar la base de datos relacional
 initDB();
@@ -20,9 +20,20 @@ const PORT = Number(process.env.PORT) || 4000;
 
 const { url } = await startStandaloneServer(server, {
   listen: { port: PORT },
-  context: async ({ req }) => ({   //Omg con esta línea el backend ya está preparado para recibir el Authorization header, para el que le toque la parte de mandar tokens.
-    token: req.headers.authorization || ''  
-  })
+  context: async ({ req }) => {
+    const rawHeader = req.headers.authorization || '';
+    let currentUser = null;
+    if (rawHeader) {
+      const decoded = verifyToken(rawHeader);
+      if (decoded && decoded.id) {
+        currentUser = dbRepo.getUsuarioById(decoded.id);
+      }
+    }
+    return {
+      token: rawHeader,
+      currentUser
+    };
+  }
 });
 
 console.log(`
@@ -36,7 +47,7 @@ console.log(`
      - Yañez Rodríguez Alan Omar (22300896)
      - Perez Velazquez Rafael (22100161)
 
-   Docente: Villavicencio Cruz Octavio
+   Profesor: Villavicencio Cruz Octavio
    Proyecto: E-Commerce Integrado (React + Zustand + GraphQL + SQLite)
 ===========================================================
 `);

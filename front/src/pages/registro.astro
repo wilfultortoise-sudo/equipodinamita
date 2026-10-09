@@ -79,7 +79,18 @@ const pageTitle = "Crear Cuenta — BiblioTech Store";
               name="telefono" 
               class="form-input" 
               placeholder="Ej. 3312345678" 
+              inputmode="numeric"
+              pattern="[0-9]{10}"
+              maxlength="10"
+              autocomplete="tel"
+              aria-describedby="telefono-help"
             />
+            <small
+              id="telefono-help"
+              style="display:block; margin-top:4px; color:var(--color-text-muted); font-size:0.78rem;"
+            >
+              solo Números. Si se captura, deben ser 10 digitos.
+            </small>
           </div>
 
           <div class="form-group">
@@ -210,24 +221,39 @@ const pageTitle = "Crear Cuenta — BiblioTech Store";
   if (authService.isAuthenticated()) {
     window.location.href = '/';
   }
-
+  const telefonoInput = document.getElementById('telefono') as HTMLInputElement;
   const form = document.getElementById('registro-form') as HTMLFormElement;
   const submitBtn = document.getElementById('reg-submit-btn') as HTMLButtonElement;
   const errorAlert = document.getElementById('reg-error-alert') as HTMLDivElement;
   const successAlert = document.getElementById('reg-success-alert') as HTMLDivElement;
+
+  if (telefonoInput){
+    telefonoInput.addEventListener('input', () => {
+      telefonoInput.value = telefonoInput.value.replace(/\D/g, '').slice(0, 10);
+    });
+  }
 
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       errorAlert.style.display = 'none';
       successAlert.style.display = 'none';
-
+      
+      const telefonoInput = document.getElementById('telefono') as HTMLInputElement;
+      const telefono = telefonoInput.value.replace(/\D/g, '').slice(0, 10);      telefonoInput.value = telefono; // Actualiza el valor del input con solo números
       const nombre = (document.getElementById('nombre') as HTMLInputElement).value.trim();
       const email = (document.getElementById('email') as HTMLInputElement).value.trim();
       const password = (document.getElementById('password') as HTMLInputElement).value;
-      const confirmPassword = (document.getElementById('confirmPassword') as HTMLInputElement).value;
-      const telefono = (document.getElementById('telefono') as HTMLInputElement).value.trim();
+        const confirmPassword = (document.getElementById('confirmPassword') as HTMLInputElement).value;
       const direccion = (document.getElementById('direccion') as HTMLTextAreaElement).value.trim();
+
+      if (telefono && !/^\d{10}$/.test(telefono)) {
+
+        errorAlert.textContent = 'El teléfono debe contener exactamente 10 digitos y solamente números.';
+        errorAlert.style.display = 'block';
+        telefonoInput.focus();
+        return;
+      }
 
       if (!nombre || !email || !password) {
         errorAlert.textContent = 'Por favor completa los campos obligatorios (*).';

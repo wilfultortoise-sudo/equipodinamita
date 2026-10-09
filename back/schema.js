@@ -92,6 +92,8 @@ export const typeDefs = `#graphql
     nombreCliente: String!
     emailCliente: String!
     usuarioId: ID
+    detallesPago: String
+    referenciaPago: String
     usuario: Usuario
     detalles: [DetallePedido!]!
   }
@@ -128,9 +130,31 @@ export const typeDefs = `#graphql
     nombreCliente: String!
     emailCliente: String!
     usuarioId: ID
+    detallesPago: String
+    referenciaPago: String
+  }
+
+  """Respuesta de autenticacion con token Bearer y datos del usuario"""
+  type AuthPayload {
+    token: String!
+    usuario: Usuario!
+  }
+  
+  """Indicadores principales del panel administrativo"""
+  type AdminKPIs {
+    ventasTotales: Float!
+    totalPedidos: Int!
+    totalClientes: Int!
+    totalProductos: Int!
+    pedidosPendientes: Int!
+    pedidosPreparando: Int!
+    pedidosEnviados: Int!
+    pedidosEntregados: Int!
   }
 
   type Query {
+    """Obtiene los indicadores principales del panel administrativo"""
+    adminKPIs: AdminKPIs!
     """Obtiene libros con filtros opcionales de categoria, busqueda y paginacion"""
     productos(categoriaId: ID, busqueda: String, limite: Int, desde: Int): [Producto!]!
 
@@ -149,14 +173,26 @@ export const typeDefs = `#graphql
     """Obtiene un usuario por ID"""
     usuario(id: ID!): Usuario
 
+    """Obtiene el usuario actualmente autenticado mediante el Bearer token"""
+    me: Usuario
+
     """Obtiene la lista de pedidos registrados"""
     pedidos: [Pedido!]!
+
+    """Obtiene los pedidos del usuario autenticado"""
+    misPedidos: [Pedido!]!
 
     """Obtiene un pedido especifico por ID o folio"""
     pedido(id: ID!): Pedido
   }
 
   type Mutation {
+    """Inicia sesion con credenciales y devuelve el token Bearer"""
+    login(email: String!, password: String!): AuthPayload!
+
+    """Registra una nueva cuenta de usuario y devuelve el token Bearer"""
+    registro(nombre: String!, email: String!, password: String!, telefono: String, direccion: String): AuthPayload!
+
     """Crea un nuevo libro en el catalogo (CRUD Create)"""
     crearProducto(datos: ProductoInput!): Producto!
 

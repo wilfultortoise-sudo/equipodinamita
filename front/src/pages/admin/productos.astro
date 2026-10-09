@@ -1,0 +1,111 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Gestión de Productos | BiblioTech">
+  <main class="admin-products-page">
+    <div class="admin-container">
+
+      <div class="admin-header">
+        <div>
+          <span class="admin-badge">ADMINISTRACIÓN</span>
+          <h1>Gestión de Productos</h1>
+          <p>
+            Desde aquí se podrán agregar, modificar y eliminar productos.
+          </p>
+        </div>
+
+        <a href="/admin" class="btn btn-outline">
+          ← Volver al Panel
+        </a>
+      </div>
+
+      <section class="products-placeholder card">
+        <div class="placeholder-icon">📚</div>
+
+        <h2>CRUD de Productos</h2>
+
+        <p>
+          Esta sección está reservada para la implementación del
+          CRUD de productos.
+        </p>
+
+        <p class="placeholder-note">
+          El módulo será implementado por el responsable de gestión
+          de productos.
+        </p>
+      </section>
+
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .admin-products-page {
+    min-height: 70vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .admin-container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .admin-badge {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: var(--color-primary);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .admin-header h1 {
+    margin: 0 0 0.5rem;
+  }
+
+  .admin-header p {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+
+  .products-placeholder {
+    padding: 4rem 2rem;
+    text-align: center;
+  }
+
+  .placeholder-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .products-placeholder h2 {
+    margin-bottom: 0.75rem;
+  }
+
+  .products-placeholder p {
+    color: var(--color-text-muted);
+  }
+
+  .placeholder-note {
+    font-size: 0.9rem;
+    margin-top: 1.5rem;
+  }
+
+  @media (max-width: 700px) {
+    .admin-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PaymentGateway from '../components/islands/PaymentGateway.jsx';
 const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
 ---
 
@@ -54,7 +55,23 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
               <div class="form-row">
                 <div class="form-group form-col">
                   <label class="form-label" for="telefonoCliente">Teléfono de Contacto</label>
-                  <input type="tel" id="telefonoCliente" class="form-input" placeholder="Ej. 3312345678" />
+                  <input 
+                    type="tel" 
+                    id="telefonoCliente" 
+                    class="form-input" 
+                    placeholder="Ej. 3312345678"
+                    inputmode="numeric"
+                    pattern="[0-9]{10}"
+                    maxlength="10"
+                    autocomplete="tel"
+                    aria-describedby="telefono-help"
+                    />
+                    <small
+                      id="telefono-help"
+                      style="display: block; margin-top: 4px; font-size: 0.78rem; color: var(--color-text-muted);"
+                    > 
+                      Solo números. Si se captura, deben ser 10 digitos
+                    </small>
                 </div>
                 <div class="form-group form-col">
                   <label class="form-label" for="ciudadCliente">Ciudad / Estado *</label>
@@ -68,74 +85,8 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
               </div>
             </div>
 
-            <!-- Sección 2: Método de Pago -->
-            <div class="card form-section-card">
-              <div class="section-title-row">
-                <span class="step-num">2</span>
-                <h3>Método de Pago Seguro</h3>
-              </div>
-
-              <div class="payment-methods-grid">
-                <label class="payment-card-option selected">
-                  <input type="radio" name="metodoPago" value="TARJETA_CREDITO" checked />
-                  <div class="payment-content">
-                    <span class="payment-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg></span>
-                    <span class="payment-name">Tarjeta de Crédito</span>
-                  </div>
-                </label>
-
-                <label class="payment-card-option">
-                  <input type="radio" name="metodoPago" value="TARJETA_DEBITO" />
-                  <div class="payment-content">
-                    <span class="payment-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><circle cx="6" cy="15" r="2"></circle><line x1="10" y1="15" x2="18" y2="15"></line></svg></span>
-                    <span class="payment-name">Tarjeta de Débito</span>
-                  </div>
-                </label>
-
-                <label class="payment-card-option">
-                  <input type="radio" name="metodoPago" value="MERCADO_PAGO" />
-                  <div class="payment-content">
-                    <span class="payment-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path></svg></span>
-                    <span class="payment-name">Mercado Pago</span>
-                  </div>
-                </label>
-
-                <label class="payment-card-option">
-                  <input type="radio" name="metodoPago" value="PAYPAL" />
-                  <div class="payment-content">
-                    <span class="payment-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M9 7h4a3 3 0 0 1 0 6H9V7z"></path></svg></span>
-                    <span class="payment-name">PayPal</span>
-                  </div>
-                </label>
-
-                <label class="payment-card-option">
-                  <input type="radio" name="metodoPago" value="TRANSFERENCIA_SPEI" />
-                  <div class="payment-content">
-                    <span class="payment-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="4" y1="10" x2="20" y2="10"></line><polygon points="12 2 20 7 4 7 12 2"></polygon><line x1="6" y1="10" x2="6" y2="21"></line><line x1="10" y1="10" x2="10" y2="21"></line><line x1="14" y1="10" x2="14" y2="21"></line><line x1="18" y1="10" x2="18" y2="21"></line></svg></span>
-                    <span class="payment-name">SPEI (Transferencia)</span>
-                  </div>
-                </label>
-              </div>
-
-              <!-- Simulación de Datos de Tarjeta -->
-              <div id="card-fields-box" class="card-simulation-box">
-                <div class="form-group">
-                  <label class="form-label" for="card-num">Número de Tarjeta (Simulado)</label>
-                  <input type="text" id="card-num" class="form-input" placeholder="4152 •••• •••• 9812" value="4152 7890 1234 9812" />
-                </div>
-                <div class="form-row">
-                  <div class="form-group form-col">
-                    <label class="form-label" for="card-exp">Vencimiento</label>
-                    <input type="text" id="card-exp" class="form-input" placeholder="MM/AA" value="12/28" />
-                  </div>
-                  <div class="form-group form-col">
-                    <label class="form-label" for="card-cvv">CVV</label>
-                    <input type="password" id="card-cvv" class="form-input" placeholder="123" value="789" />
-                  </div>
-                </div>
-              </div>
-
-            </div>
+            <!-- Sección 2: Método de Pago Seguro (Hugo - Pasarela Multimétodo Interactiva) -->
+            <PaymentGateway client:load />
 
             <!-- Botón de Envío -->
             <button type="submit" id="submit-order-btn" class="btn btn-primary btn-block btn-lg">
@@ -506,6 +457,7 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
   import { cartService } from '../services/cart.js';
   import { apiClient } from '../services/apiClient.js';
 
+  const telefonoClienteInput = document.getElementById('telefonoCliente') as HTMLInputElement;
   const authBox = document.getElementById('auth-required-box') as HTMLElement;
   const mainView = document.getElementById('checkout-main-view') as HTMLElement;
   const form = document.getElementById('checkout-form') as HTMLFormElement;
@@ -518,6 +470,12 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
   const discountEl = document.getElementById('chk-discount') as HTMLElement;
   const shippingEl = document.getElementById('chk-shipping') as HTMLElement;
   const totalEl = document.getElementById('chk-total') as HTMLElement;
+
+  if (telefonoClienteInput) {
+    telefonoClienteInput.addEventListener('input', () => {
+      telefonoClienteInput.value = telefonoClienteInput.value.replace(/\D/g, '').slice(0, 10);
+    });
+  }
 
   // 1. Verificar autenticación (Rafa - Protección de Ruta)
   if (!authService.isAuthenticated()) {
@@ -552,7 +510,7 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
 
     // 4. Renderizar desglose de la orden
     if (itemsPreview) {
-      itemsPreview.innerHTML = cartItems.map((item) => `
+      itemsPreview.innerHTML = cartItems.map((item: { imagen: any; titulo: any; cantidad: any; precio: any; }) => `
         <div class="order-item-mini">
           <img src="${item.imagen}" alt="${item.titulo}" class="mini-thumb" />
           <div class="mini-details">
@@ -590,66 +548,117 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
     });
 
     // 6. Enviar la orden de compra con GraphQL
-    if (form) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (errorAlert) errorAlert.style.display = 'none';
+  let currentPaymentInfo: { metodoPago: string; detallesPago: string | null; referenciaPago: string | null } = {
+    metodoPago: 'TARJETA_CREDITO',
+    detallesPago: null,
+    referenciaPago: null
+  };
 
-        const nombreCliente = (document.getElementById('nombreCliente') as HTMLInputElement).value.trim();
-        const emailCliente = (document.getElementById('emailCliente') as HTMLInputElement).value.trim();
-        const direccionEnvio = (document.getElementById('direccionEnvio') as HTMLTextAreaElement).value.trim();
-        const ciudad = (document.getElementById('ciudadCliente') as HTMLInputElement).value.trim();
-        const metodoRadio = document.querySelector('input[name="metodoPago"]:checked') as HTMLInputElement;
-        const metodoPago = metodoRadio ? metodoRadio.value : 'TARJETA_CREDITO';
+  window.addEventListener('payment-method-changed', (e: any) => {
+    if (e.detail) {
+      currentPaymentInfo = {
+        metodoPago: e.detail.metodoPago || 'TARJETA_CREDITO',
+        detallesPago: e.detail.detallesPago || null,
+        referenciaPago: e.detail.referenciaPago || null
+      };
+    }
+  });
 
-        const fullAddress = `${direccionEnvio}, ${ciudad}`;
-        const items = cartItems.map((i) => ({
-          productoId: i.id,
-          cantidad: i.cantidad
-        }));
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (errorAlert) errorAlert.style.display = 'none';
+      
+      const overStock = cartItems.find((i: any) => Number(i.cantidad) > Number(i.stock));
+      if (overStock) {
+        const message = 'Stock insuficiente para "' + overStock.titulo + '". Solicitado: ' + overStock.cantidad + ', disponible: ' + overStock.stock + '.';
+        if (errorAlert) {
+          errorAlert.textContent = message;
+          errorAlert.style.display = 'block';
+        }
+        if ((window as any).showToast) (window as any).showToast(message, 'error');
+        return;
+      }
 
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span>⏳ Procesando pago y registrando orden...</span>';
+      const telefonoCliente = (document.getElementById('telefonoCliente') as HTMLInputElement).value.trim();
+      if (telefonoCliente && !/^\d{10}$/.test(telefonoCliente))
+      {
+        const message = 'El teléfono debe tener exactamente 10 dígitos.';
+        if (errorAlert) {
+          errorAlert.textContent = message;
+          errorAlert.style.display = 'block';
+        }
+        if ((window as any).showToast) (window as any).showToast(message, 'error');
+        telefonoClienteInput.focus();
+        return;
+      }
 
-        const mutation = `
-          mutation CrearPedidoDirecto($datos: PedidoInput!) {
-            crearPedido(datos: $datos) {
-              id
-              folio
-              fecha
-              subtotal
-              envio
-              total
-              status
-              metodoPago
-              nombreCliente
-            }
+      const nombreCliente = (document.getElementById('nombreCliente') as HTMLInputElement).value.trim();
+      const emailCliente = (document.getElementById('emailCliente') as HTMLInputElement).value.trim();
+      const direccionEnvio = (document.getElementById('direccionEnvio') as HTMLTextAreaElement).value.trim();
+      const ciudad = (document.getElementById('ciudadCliente') as HTMLInputElement).value.trim();
+      
+      const metodoPago = currentPaymentInfo.metodoPago || 'TARJETA_CREDITO';
+      const detallesPago = currentPaymentInfo.detallesPago;
+      const referenciaPago = currentPaymentInfo.referenciaPago;
+
+      const fullAddress = `${direccionEnvio}, ${ciudad}`;
+      const items = cartItems.map((i: { id: any; cantidad: any; }) => ({
+        productoId: i.id,
+        cantidad: i.cantidad
+      }));
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>⏳ Procesando pago y registrando orden...</span>';
+
+      const mutation = `
+        mutation CrearPedidoDirecto($datos: PedidoInput!) {
+          crearPedido(datos: $datos) {
+            id
+            folio
+            fecha
+            subtotal
+            envio
+            total
+            status
+            metodoPago
+            nombreCliente
+            detallesPago
+            referenciaPago
           }
-        `;
+        }
+      `;
 
-        try {
-          const res = await apiClient.mutation(mutation, {
-            datos: {
-              items,
-              metodoPago,
-              direccionEnvio: fullAddress,
-              nombreCliente,
-              emailCliente,
-              usuarioId: user ? user.id : null
-            }
-          });
-
-          if (res?.crearPedido?.folio) {
-            cartService.clearCart();
-            if ((window as any).showToast) {
-              (window as any).showToast('¡Orden generada exitosamente!', 'success');
-            }
-            setTimeout(() => {
-              window.location.href = `/orden-confirmada?folio=${res.crearPedido.folio}`;
-            }, 500);
-          } else {
-            throw new Error('No se recibió el folio de confirmación.');
+      try {
+        const res = await apiClient.mutation(mutation, {
+          datos: {
+            items,
+            metodoPago,
+            direccionEnvio: fullAddress,
+            nombreCliente,
+            emailCliente,
+            usuarioId: user ? user.id : null,
+            detallesPago,
+            referenciaPago
           }
+        });
+
+        if (res?.crearPedido?.folio) {
+          cartService.clearCart();
+          if ((window as any).showToast) {
+            (window as any).showToast('¡Orden generada exitosamente!', 'success');
+          }
+          setTimeout(() => {
+            const urlParams = new URLSearchParams({
+              folio: res.crearPedido.folio,
+              metodo: res.crearPedido.metodoPago || metodoPago,
+              ref: res.crearPedido.referenciaPago || ''
+            });
+            window.location.href = `/orden-confirmada?${urlParams.toString()}`;
+          }, 500);
+        } else {
+          throw new Error('No se recibió el folio de confirmación.');
+        }
         } catch (err: any) {
           if (errorAlert) {
             errorAlert.textContent = err.message || 'Error al procesar la orden. Verifica la disponibilidad.';

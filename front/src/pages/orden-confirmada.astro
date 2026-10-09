@@ -16,6 +16,7 @@ const pageTitle = "¡Orden Confirmada! — BiblioTech Store";
         <div class="folio-box">
           <span class="folio-label">Folio Oficial de Pedido:</span>
           <span id="order-folio-display" class="folio-code">CARGANDO...</span>
+          <div id="payment-method-display" style="display: none; margin-top: 0.65rem; padding-top: 0.5rem; border-top: 1px dashed #cbd5e1; font-size: 0.88rem; color: #1e3a8a; font-weight: 600;"></div>
         </div>
 
         <div class="info-steps-card">
@@ -170,8 +171,26 @@ const pageTitle = "¡Orden Confirmada! — BiblioTech Store";
 <script>
   const params = new URLSearchParams(window.location.search);
   const folio = params.get('folio') || 'PED-2026-NUEVO';
+  const metodo = params.get('metodo');
+  const ref = params.get('ref');
+
   const display = document.getElementById('order-folio-display');
   if (display) {
     display.textContent = folio;
+  }
+
+  const payDisplay = document.getElementById('payment-method-display');
+  if (payDisplay && metodo) {
+    payDisplay.style.display = 'block';
+    const methodNames: Record<string, string> = {
+      'TARJETA_CREDITO': '💳 Tarjeta de Crédito',
+      'TARJETA_DEBITO': '💳 Tarjeta de Débito',
+      'OXXO_EFECTIVO': '🏪 OXXO Pay (En Efectivo)',
+      'MERCADO_PAGO': '⚡ Mercado Pago',
+      'PAYPAL': '🅿️ PayPal',
+      'TRANSFERENCIA_SPEI': '🏦 Transferencia SPEI'
+    };
+    const friendlyName = methodNames[metodo] || metodo.replace(/_/g, ' ');
+    payDisplay.innerHTML = `<span>Método: <strong>${friendlyName}</strong></span> ${ref ? `<span style="display:block; margin-top:2px; font-size:0.8rem; color:#64748b;">Ref: ${ref}</span>` : ''}`;
   }
 </script>

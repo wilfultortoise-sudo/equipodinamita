@@ -1,0 +1,1086 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Gestión de Órdenes | BiblioTech Store">
+
+  <main class="admin-page">
+
+    <section class="admin-header">
+      <div>
+        <span class="admin-label">BIBLIOTECH STORE</span>
+        <h1>Gestión de Órdenes</h1>
+        <p>
+          Consulta y administra los pedidos realizados en la tienda.
+        </p>
+      </div>
+
+      <a href="/admin" class="back-button">
+        ← Panel Admin
+      </a>
+    </section>
+
+    <!-- Cargando -->
+    <section id="loading" class="message-card">
+      Cargando órdenes...
+    </section>
+
+    <!-- Error -->
+    <section
+      id="error"
+      class="message-card error"
+      style="display:none;"
+    >
+      <h2>Error</h2>
+      <p id="error-message"></p>
+
+      <a href="/admin" class="back-button">
+        Volver al panel
+      </a>
+    </section>
+
+    <!-- Contenido -->
+    <section
+      id="orders-content"
+      style="display:none;"
+    >
+
+      <div class="orders-summary">
+        <div>
+          <span>Total de órdenes</span>
+          <strong id="total-orders">0</strong>
+        </div>
+
+        <button
+          id="refresh-button"
+          class="refresh-button"
+          type="button"
+        >
+          ↻ Actualizar
+        </button>
+      </div>
+
+      <div id="orders-container"></div>
+
+    </section>
+
+  </main>
+
+
+  <script>
+
+    const API_URL =
+      import.meta.env.PUBLIC_API_URL ||
+      'http://localhost:4000/';
+
+    const loadingElement =
+      document.getElementById('loading');
+
+    const errorElement =
+      document.getElementById('error');
+
+    const errorMessageElement =
+      document.getElementById('error-message');
+
+    const contentElement =
+      document.getElementById('orders-content');
+
+    const ordersContainer =
+      document.getElementById('orders-container');
+
+    const totalOrdersElement =
+      document.getElementById('total-orders');
+
+    const refreshButton =
+      document.getElementById('refresh-button');
+
+
+    function mostrarError(mensaje: string): void {
+
+      if (loadingElement) {
+        loadingElement.style.display = 'none';
+      }
+
+      if (contentElement) {
+        contentElement.style.display = 'none';
+      }
+
+      if (errorElement) {
+        errorElement.style.display = 'block';
+      }
+
+      if (errorMessageElement) {
+        errorMessageElement.textContent = mensaje;
+      }
+    }
+
+
+    function obtenerTextoEstado(status: string): string {
+
+      const estados: Record<string, string> = {
+        PENDIENTE: 'Pendiente',
+        PAGADO: 'Pagado',
+        PREPARANDO: 'Preparando',
+        ENVIADO: 'Enviado',
+        ENTREGADO: 'Entregado',
+        CANCELADO: 'Cancelado'
+      };
+
+      return estados[status] || status;
+    }
+
+
+    function obtenerClaseEstado(status: string): string {
+
+      const clases: Record<string, string> = {
+        PENDIENTE: 'pendiente',
+        PAGADO: 'pagado',
+        PREPARANDO: 'preparando',
+        ENVIADO: 'enviado',
+        ENTREGADO: 'entregado',
+        CANCELADO: 'cancelado'
+      };
+
+      return clases[status] || '';
+    }
+
+
+    function formatearFecha(fecha: string): string {
+
+      const fechaObjeto = new Date(fecha);
+
+      if (Number.isNaN(fechaObjeto.getTime())) {
+        return fecha;
+      }
+
+      return fechaObjeto.toLocaleString('es-MX', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      });
+    }
+
+
+    function formatearMoneda(valor: number): string {
+
+      return Number(valor).toLocaleString(
+        'es-MX',
+        {
+          style: 'currency',
+          currency: 'MXN'
+        }
+      );
+    }
+
+
+    async function cambiarEstado(
+      id: number,
+      nuevoEstado: string
+    ): Promise<void> {
+
+      const token =
+        localStorage.getItem('auth_token');
+
+      if (!token) {
+        window.location.href =
+          '/login?redirect=/admin/ordenes';
+
+        return;
+      }
+
+      const mutation = `
+        mutation ActualizarEstadoPedido(
+          $id: ID!
+          $status: StatusPedido!
+        ) {
+          actualizarEstadoPedido(
+            id: $id
+            status: $status
+          ) {
+            id
+            folio
+            status
+          }
+        }
+      `;
+
+      try {
+
+        const response = await fetch(API_URL, {
+
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+
+          body: JSON.stringify({
+            query: mutation,
+            variables: {
+              id,
+              status: nuevoEstado
+            }
+          })
+
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Error HTTP ${response.status}`
+          );
+        }
+
+        const result = await response.json();
+
+        if (result.errors) {
+
+          const mensaje: string =
+            result.errors[0]?.message ||
+            'No se pudo actualizar el estado.';
+
+          throw new Error(mensaje);
+        }
+
+        await cargarOrdenes();
+
+      } catch (error: unknown) {
+
+        console.error(
+          'Error actualizando pedido:',
+          error
+        );
+
+        const mensaje =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo actualizar el pedido.';
+
+        alert(mensaje);
+      }
+    }
+
+
+    function crearSelectorEstado(
+      pedidoId: number,
+      estadoActual: string
+    ): HTMLSelectElement {
+
+      const select =
+        document.createElement('select');
+
+      select.className =
+        'status-select';
+
+      const estados = [
+        'PENDIENTE',
+        'PAGADO',
+        'PREPARANDO',
+        'ENVIADO',
+        'ENTREGADO',
+        'CANCELADO'
+      ];
+
+      estados.forEach((estado) => {
+
+        const option =
+          document.createElement('option');
+
+        option.value = estado;
+        option.textContent =
+          obtenerTextoEstado(estado);
+
+        if (estado === estadoActual) {
+          option.selected = true;
+        }
+
+        select.appendChild(option);
+      });
+
+
+      select.addEventListener(
+        'change',
+        async () => {
+
+          const nuevoEstado =
+            select.value;
+
+          await cambiarEstado(
+            pedidoId,
+            nuevoEstado
+          );
+
+        }
+      );
+
+
+      return select;
+    }
+
+
+    function crearPedidoHTML(pedido: any): HTMLElement {
+
+      const card =
+        document.createElement('article');
+
+      card.className = 'order-card';
+
+
+      const header =
+        document.createElement('div');
+
+      header.className = 'order-header';
+
+
+      const orderInfo =
+        document.createElement('div');
+
+      const folio =
+        document.createElement('h2');
+
+      folio.textContent =
+        pedido.folio;
+
+      const date =
+        document.createElement('p');
+
+      date.textContent =
+        formatearFecha(pedido.fecha);
+
+      orderInfo.appendChild(folio);
+      orderInfo.appendChild(date);
+
+
+      const statusContainer =
+        document.createElement('div');
+
+      statusContainer.className =
+        'status-container';
+
+
+      const statusBadge =
+        document.createElement('span');
+
+      statusBadge.className =
+        `status-badge ${obtenerClaseEstado(pedido.status)}`;
+
+      statusBadge.textContent =
+        obtenerTextoEstado(pedido.status);
+
+
+      const statusSelect =
+        crearSelectorEstado(
+          Number(pedido.id),
+          pedido.status
+        );
+
+
+      statusContainer.appendChild(statusBadge);
+      statusContainer.appendChild(statusSelect);
+
+      header.appendChild(orderInfo);
+      header.appendChild(statusContainer);
+
+
+      // Cliente
+      const customer =
+        document.createElement('div');
+
+      customer.className =
+        'customer-section';
+
+      customer.innerHTML = `
+        <h3>Cliente</h3>
+        <p>
+          <strong>${pedido.nombreCliente || 'Sin nombre'}</strong>
+        </p>
+        <p>${pedido.emailCliente || 'Sin correo'}</p>
+      `;
+
+
+      // Información del pedido
+      const info =
+        document.createElement('div');
+
+      info.className =
+        'order-info-grid';
+
+      info.innerHTML = `
+        <div>
+          <span>Subtotal</span>
+          <strong>${formatearMoneda(pedido.subtotal)}</strong>
+        </div>
+
+        <div>
+          <span>Envío</span>
+          <strong>${formatearMoneda(pedido.envio)}</strong>
+        </div>
+
+        <div>
+          <span>Total</span>
+          <strong>${formatearMoneda(pedido.total)}</strong>
+        </div>
+
+        <div>
+          <span>Método de pago</span>
+          <strong>${pedido.metodoPago || 'No especificado'}</strong>
+        </div>
+      `;
+
+
+      // Productos
+      const productsSection =
+        document.createElement('div');
+
+      productsSection.className =
+        'products-section';
+
+
+      const productsTitle =
+        document.createElement('h3');
+
+      productsTitle.textContent =
+        'Productos';
+
+      productsSection.appendChild(productsTitle);
+
+
+      if (
+        pedido.detalles &&
+        pedido.detalles.length > 0
+      ) {
+
+        pedido.detalles.forEach((detalle: any) => {
+
+          const product =
+            document.createElement('div');
+
+          product.className =
+            'product-row';
+
+
+          const productName =
+            detalle.producto?.titulo ||
+            'Producto';
+
+
+          product.innerHTML = `
+            <div class="product-data">
+              <strong>${productName}</strong>
+              <span>
+                Cantidad: ${detalle.cantidad}
+              </span>
+            </div>
+
+            <div class="product-price">
+              ${formatearMoneda(detalle.subtotal)}
+            </div>
+          `;
+
+          productsSection.appendChild(product);
+
+        });
+
+      } else {
+
+        const empty =
+          document.createElement('p');
+
+        empty.textContent =
+          'No hay productos registrados.';
+
+        productsSection.appendChild(empty);
+      }
+
+
+      // Dirección
+      const address =
+        document.createElement('div');
+
+      address.className =
+        'address-section';
+
+      address.innerHTML = `
+        <h3>Dirección de envío</h3>
+        <p>
+          ${pedido.direccionEnvio || 'No especificada'}
+        </p>
+      `;
+
+
+      card.appendChild(header);
+      card.appendChild(customer);
+      card.appendChild(info);
+      card.appendChild(productsSection);
+      card.appendChild(address);
+
+
+      return card;
+    }
+
+
+    async function cargarOrdenes(): Promise<void> {
+
+      const token =
+        localStorage.getItem('auth_token');
+
+      const userRaw =
+        localStorage.getItem('auth_user');
+
+
+      // --------------------------------------------------
+      // Verificar sesión
+      // --------------------------------------------------
+
+      if (!token || !userRaw) {
+
+        window.location.href =
+          '/login?redirect=/admin/ordenes';
+
+        return;
+      }
+
+
+      let usuario: {
+        id?: number;
+        nombre?: string;
+        email?: string;
+        rol?: string;
+      };
+
+
+      try {
+
+        usuario =
+          JSON.parse(userRaw);
+
+      } catch {
+
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+
+        window.location.href =
+          '/login?redirect=/admin/ordenes';
+
+        return;
+      }
+
+
+      // --------------------------------------------------
+      // Verificar ADMIN
+      // --------------------------------------------------
+
+      if (usuario.rol !== 'ADMIN') {
+
+        mostrarError(
+          'Tu cuenta no tiene permisos de administrador.'
+        );
+
+        return;
+      }
+
+
+      const query = `
+        query ObtenerPedidosAdmin {
+
+          pedidos {
+
+            id
+            folio
+            fecha
+
+            subtotal
+            envio
+            total
+
+            status
+            metodoPago
+            direccionEnvio
+
+            nombreCliente
+            emailCliente
+
+            usuarioId
+
+            detalles {
+
+              id
+              cantidad
+              precioUnitario
+              subtotal
+
+              producto {
+                id
+                titulo
+                autor
+                imagen
+              }
+
+            }
+
+          }
+
+        }
+      `;
+
+
+      try {
+
+        const response =
+          await fetch(API_URL, {
+
+            method: 'POST',
+
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization':
+                'Bearer ' + token
+            },
+
+            body: JSON.stringify({
+              query
+            })
+
+          });
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            `Error HTTP ${response.status}`
+          );
+
+        }
+
+
+        const result =
+          await response.json();
+
+
+        if (result.errors) {
+
+          const mensaje: string =
+            result.errors[0]?.message ||
+            'No se pudieron obtener las órdenes.';
+
+          mostrarError(mensaje);
+
+          return;
+        }
+
+
+        const pedidos =
+          result.data?.pedidos || [];
+
+
+        if (totalOrdersElement) {
+
+          totalOrdersElement.textContent =
+            String(pedidos.length);
+
+        }
+
+
+        if (ordersContainer) {
+
+          ordersContainer.innerHTML = '';
+
+          if (pedidos.length === 0) {
+
+            const empty =
+              document.createElement('div');
+
+            empty.className =
+              'empty-card';
+
+            empty.textContent =
+              'No hay pedidos registrados.';
+
+            ordersContainer.appendChild(empty);
+
+          } else {
+
+            pedidos.forEach((pedido: any) => {
+
+              const pedidoElement =
+                crearPedidoHTML(pedido);
+
+              ordersContainer.appendChild(
+                pedidoElement
+              );
+
+            });
+
+          }
+
+        }
+
+
+        if (loadingElement) {
+          loadingElement.style.display =
+            'none';
+        }
+
+        if (contentElement) {
+          contentElement.style.display =
+            'block';
+        }
+
+
+      } catch (error: unknown) {
+
+        console.error(
+          'Error cargando órdenes:',
+          error
+        );
+
+
+        const mensaje =
+          error instanceof Error
+            ? error.message
+            : 'No fue posible cargar las órdenes.';
+
+        mostrarError(mensaje);
+
+      }
+
+    }
+
+
+    if (refreshButton) {
+
+      refreshButton.addEventListener(
+        'click',
+        () => {
+          cargarOrdenes();
+        }
+      );
+
+    }
+
+
+    cargarOrdenes();
+
+  </script>
+
+
+  <style>
+
+    .admin-page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px 70px;
+    }
+
+
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+
+    .admin-label {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      opacity: .65;
+    }
+
+
+    .admin-header h1 {
+      margin: 8px 0;
+      font-size: 38px;
+    }
+
+
+    .admin-header p {
+      margin: 0;
+      opacity: .7;
+    }
+
+
+    .back-button,
+    .refresh-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 18px;
+      border: none;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 700;
+      background: #111827;
+      color: white;
+      cursor: pointer;
+    }
+
+
+    .message-card {
+      padding: 30px;
+      border-radius: 16px;
+      background: #f3f4f6;
+      text-align: center;
+    }
+
+
+    .message-card.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+
+    .message-card .back-button {
+      margin-top: 15px;
+    }
+
+
+    .orders-summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding: 20px;
+      border-radius: 14px;
+      background: white;
+      box-shadow:
+        0 4px 20px rgba(0, 0, 0, .06);
+    }
+
+
+    .orders-summary span {
+      display: block;
+      font-size: 14px;
+      opacity: .65;
+      margin-bottom: 5px;
+    }
+
+
+    .orders-summary strong {
+      font-size: 28px;
+    }
+
+
+    #orders-container {
+      display: grid;
+      gap: 20px;
+    }
+
+
+    .order-card {
+      padding: 25px;
+      border-radius: 16px;
+      background: white;
+      box-shadow:
+        0 4px 20px rgba(0, 0, 0, .07);
+    }
+
+
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+
+    .order-header h2 {
+      margin: 0 0 5px;
+      font-size: 20px;
+    }
+
+
+    .order-header p {
+      margin: 0;
+      opacity: .6;
+      font-size: 14px;
+    }
+
+
+    .status-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+
+    .status-badge {
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+
+    .status-badge.pendiente {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+
+    .status-badge.pagado {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+
+    .status-badge.preparando {
+      background: #ede9fe;
+      color: #6d28d9;
+    }
+
+
+    .status-badge.enviado {
+      background: #cffafe;
+      color: #155e75;
+    }
+
+
+    .status-badge.entregado {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+
+    .status-badge.cancelado {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+
+    .status-select {
+      padding: 7px 9px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+    }
+
+
+    .customer-section,
+    .products-section,
+    .address-section {
+      padding: 20px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+
+    .customer-section h3,
+    .products-section h3,
+    .address-section h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+
+    .customer-section p,
+    .address-section p {
+      margin: 4px 0;
+      font-size: 14px;
+    }
+
+
+    .order-info-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 15px;
+      padding: 20px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+
+    .order-info-grid span {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 13px;
+      opacity: .6;
+    }
+
+
+    .order-info-grid strong {
+      font-size: 15px;
+    }
+
+
+    .product-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      padding: 12px 0;
+      border-top: 1px solid #f3f4f6;
+    }
+
+
+    .product-data strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+
+    .product-data span {
+      font-size: 13px;
+      opacity: .6;
+    }
+
+
+    .product-price {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+
+    .empty-card {
+      padding: 40px;
+      border-radius: 16px;
+      background: white;
+      text-align: center;
+      opacity: .7;
+    }
+
+
+    @media (max-width: 800px) {
+
+      .admin-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .order-header {
+        flex-direction: column;
+      }
+
+      .status-container {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+
+      .order-info-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+    }
+
+
+    @media (max-width: 500px) {
+
+      .order-info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .orders-summary {
+        align-items: flex-start;
+        gap: 15px;
+        flex-direction: column;
+      }
+
+    }
+
+  </style>
+
+</BaseLayout>
