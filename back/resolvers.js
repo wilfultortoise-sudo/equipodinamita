@@ -1,4 +1,5 @@
 import { dbRepo } from './db.js';
+import { pubsub, TOPICS } from './pubsub.js';
 
 export const resolvers = {
   Query: {
@@ -79,13 +80,19 @@ export const resolvers = {
       return dbRepo.registroUsuario({ nombre, email, password, telefono, direccion });
     },
     crearProducto: (_, { datos }) => {
-      return dbRepo.crearProducto(datos);
+      const nuevoProducto = dbRepo.crearProducto(datos);
+      pubsub.publish(TOPICS.STOCK_ACTUALIZADO, { stockActualizado: nuevoProducto });
+      return nuevoProducto;
     },
     actualizarProducto: (_, { id, datos }) => {
-      return dbRepo.actualizarProducto(id, datos);
+      const productoActualizado = dbRepo.actualizarProducto(id, datos);
+      pubsub.publish(TOPICS.STOCK_ACTUALIZADO, { stockActualizado: productoActualizado });
+      return productoActualizado;
     },
     actualizarStock: (_, { id, stock }) => {
-      return dbRepo.actualizarStock(id, stock);
+      const productoActualizado = dbRepo.actualizarStock(id, stock);
+      pubsub.publish(TOPICS.STOCK_ACTUALIZADO, { stockActualizado: productoActualizado });
+      return productoActualizado;
     },
     eliminarProducto: (_, { id }) => {
       return dbRepo.eliminarProducto(id);
@@ -97,10 +104,40 @@ export const resolvers = {
         if (!datos.nombreCliente) datos.nombreCliente = context.currentUser.nombre;
         if (!datos.emailCliente) datos.emailCliente = context.currentUser.email;
       }
-      return dbRepo.crearPedido(datos);
+      const nuevoPedido = dbRepo.crearPedido(datos);
+
+      // 1. Notificar inmediatamente la creación del pedido vía WebSocket
+      pubsub.publish(TOPICS.PEDIDO_CREADO, { pedidoCreado: nuevoPedido });
+
+      // 2. Notificar actualización de stock de cada producto involucrado
+      if (datos?.items && Array.isArray(datos.items)) {
+        for (const item of datos.items) {
+          const productoAfectado = dbRepo.getProductoById(item.productoId);
+          if (productoAfectado) {
+            pubsub.publish(TOPICS.STOCK_ACTUALIZADO, { stockActualizado: productoAfectado });
+          }
+        }
+      }
+
+      return nuevoPedido;
     },
     actualizarEstadoPedido: (_, { id, status }) => {
-      return dbRepo.actualizarEstadoPedido(id, status);
+      const pedidoActualizado = dbRepo.actualizarEstadoPedido(id, status);
+      pubsub.publish(TOPICS.PEDIDO_ACTUALIZADO, { pedidoActualizado });
+      return pedidoActualizado;
+    }
+  },
+
+  Subscription: {
+    pedidoCreado: {
+      subscribe: () => pubsub.asyncIterator([TOPICS.PEDIDO_CREADO])
+    },
+    pedidoActualizado: {
+      subscribe: () => pubsub.asyncIterator([TOPICS.PEDIDO_ACTUALIZADO])
+    },
+    stockActualizado: {
+      subscribe: () => pubsub.asyncIterator([TOPICS.STOCK_ACTUALIZADO])
     }
   }
 };
+

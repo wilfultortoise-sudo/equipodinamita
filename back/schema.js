@@ -193,4 +193,15 @@ export const typeDefs = `#graphql
     """Actualiza el estado de un pedido"""
     actualizarEstadoPedido(id: ID!, status: StatusPedido!): Pedido!
   }
+
+  type Subscription {
+    """Notifica en tiempo real cuando un cliente realiza una compra"""
+    pedidoCreado: Pedido!
+
+    """Notifica en tiempo real cuando cambia el estado de una orden"""
+    pedidoActualizado: Pedido!
+
+    """Notifica en tiempo real cuando se modifica el stock de un libro"""
+    stockActualizado: Producto!
+  }
 `;
