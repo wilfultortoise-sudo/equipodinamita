@@ -1,24 +1,95 @@
 import { dbRepo } from './db.js';
 import { pubsub, TOPICS } from './pubsub.js';
 
+// ============================================================
+// PROTECCIÓN DE ROL
+// ============================================================
+
+function requireAuth(context) {
+  if (!context?.currentUser) {
+    throw new Error('No autorizado: debe iniciar sesión.');
+  }
+
+  return context.currentUser;
+}
+
+function requireAdmin(context) {
+  const user = requireAuth(context);
+
+  if (user.rol !== 'ADMIN') {
+    throw new Error('Acceso denegado: se requiere el rol ADMIN.');
+  }
+
+  return user;
+}
+
+
+// ============================================================
+// RESOLVERS
+// ============================================================
+
 export const resolvers = {
+
+  // ==========================================================
+  // QUERIES
+  // ==========================================================
+
   Query: {
+
+    
+
     productos: (_, { categoriaId, busqueda, limite, desde }) => {
-      return dbRepo.getProductos({ categoriaId, busqueda, limite, desde });
+      return dbRepo.getProductos({
+        categoriaId,
+        busqueda,
+        limite,
+        desde
+      });
     },
+
+    adminKPIs: (_, __, context) => {
+
+      requireAdmin(context);
+
+      return dbRepo.getAdminKPIs();
+    },
+
     producto: (_, { id }) => {
       return dbRepo.getProductoById(id);
     },
+
     categorias: () => {
       return dbRepo.getCategorias();
     },
+
     categoria: (_, { id }) => {
       return dbRepo.getCategoriaById(id);
     },
-    usuarios: () => {
+
+
+    // --------------------------------------------------------
+    // USUARIOS
+    // Solo ADMIN puede consultar todos los usuarios
+    // --------------------------------------------------------
+
+    usuarios: (_, __, context) => {
+      requireAdmin(context);
+
       return dbRepo.getUsuarios();
     },
-    usuario: (_, { id }) => {
+
+    // Un usuario puede consultar su propio registro.
+    // ADMIN puede consultar cualquier usuario.
+    usuario: (_, { id }, context) => {
+
+      const user = requireAuth(context);
+
+      if (user.rol !== 'ADMIN' && Number(user.id) !== Number(id)) {
+        throw new Error(
+          'Acceso denegado: no puedes consultar la información de otro usuario.'
+        );
+      }
+
       return dbRepo.getUsuarioById(id);
     },
     me: (_, __, context) => {
@@ -38,39 +109,108 @@ export const resolvers = {
     }
   },
 
+
+  // ==========================================================
+  // PRODUCTO
+  // ==========================================================
+
   Producto: {
+
     categoria: (parent) => {
       return dbRepo.getCategoriaById(parent.categoriaId);
     }
   },
 
+
+  // ==========================================================
+  // CATEGORIA
+  // ==========================================================
+
   Categoria: {
+
     productos: (parent) => {
       return dbRepo.getProductosByCategoriaId(parent.id);
     }
   },
 
+
+  // ==========================================================
+  // USUARIO
+  // ==========================================================
+
   Usuario: {
-    pedidos: (parent) => {
+
+    pedidos: (parent, _, context) => {
+
+      const user = requireAuth(context);
+
+      // ADMIN puede consultar los pedidos de cualquier usuario.
+      if (user.rol === 'ADMIN') {
+        return dbRepo.getPedidosByUsuarioId(parent.id);
+      }
+
+      // CLIENTE solamente puede consultar sus propios pedidos.
+      if (Number(user.id) !== Number(parent.id)) {
+        throw new Error(
+          'Acceso denegado: no puedes consultar los pedidos de otro usuario.'
+        );
+      }
+
       return dbRepo.getPedidosByUsuarioId(parent.id);
     }
   },
 
+
+  // ==========================================================
+  // PEDIDO
+  // ==========================================================
+
   Pedido: {
-    usuario: (parent) => {
-      if (!parent.usuarioId) return null;
+
+    usuario: (parent, _, context) => {
+
+      const user = requireAuth(context);
+
+      if (
+        user.rol !== 'ADMIN' &&
+        Number(parent.usuarioId) !== Number(user.id)
+      ) {
+        throw new Error(
+          'Acceso denegado: no puedes consultar el usuario de este pedido.'
+        );
+      }
+
+      if (!parent.usuarioId) {
+        return null;
+      }
+
       return dbRepo.getUsuarioById(parent.usuarioId);
     },
-    detalles: (parent) => {
+
+    detalles: (parent, _, context) => {
+
+      requireAuth(context);
+
       return dbRepo.getDetallesByPedidoId(parent.id);
     }
   },
 
+
+  // ==========================================================
+  // DETALLE DE PEDIDO
+  // ==========================================================
+
   DetallePedido: {
+
     producto: (parent) => {
       return dbRepo.getProductoById(parent.productoId);
     }
   },
+
+
+  // ==========================================================
+  // MUTATIONS
+  // ==========================================================
 
   Mutation: {
     login: (_, { email, password }) => {
@@ -94,7 +234,12 @@ export const resolvers = {
       pubsub.publish(TOPICS.STOCK_ACTUALIZADO, { stockActualizado: productoActualizado });
       return productoActualizado;
     },
-    eliminarProducto: (_, { id }) => {
+
+
+    eliminarProducto: (_, { id }, context) => {
+
+      requireAdmin(context);
+
       return dbRepo.eliminarProducto(id);
     },
     crearPedido: (_, { datos }, context) => {

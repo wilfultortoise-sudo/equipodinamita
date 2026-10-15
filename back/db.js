@@ -209,6 +209,70 @@ export const dbRepo = {
     return db.prepare('SELECT * FROM detalles_pedido WHERE pedidoId = ?').all(pedidoId);
   },
 
+  // ==========================================================
+  // KPIs DEL PANEL ADMINISTRATIVO
+  // ==========================================================
+
+  getAdminKPIs: () => {
+
+    const ventas = db.prepare(`
+      SELECT COALESCE(SUM(total), 0) AS total
+      FROM pedidos
+      WHERE status != 'CANCELADO'
+    `).get();
+
+    const pedidos = db.prepare(`
+      SELECT COUNT(*) AS total
+      FROM pedidos
+    `).get();
+
+    const clientes = db.prepare(`
+      SELECT COUNT(*) AS total
+      FROM usuarios
+      WHERE rol = 'CLIENTE'
+    `).get();
+
+    const productos = db.prepare(`
+      SELECT COUNT(*) AS total
+      FROM productos
+    `).get();
+
+    const pendientes = db.prepare(`
+      SELECT COUNT(*) AS total
+      FROM pedidos
+      WHERE status = 'PENDIENTE'
+    `).get();
+
+    const preparando = db.prepare(`
+      SELECT COUNT(*) AS total
+      FROM pedidos
+      WHERE status = 'PREPARANDO'
+    `).get();
+
+    const enviados = db.prepare(`
+      SELECT COUNT(*) AS total
+      FROM pedidos
+      WHERE status = 'ENVIADO'
+    `).get();
+
+    const entregados = db.prepare(`
+      SELECT COUNT(*) AS total
+      FROM pedidos
+      WHERE status = 'ENTREGADO'
+    `).get();
+
+    return {
+      ventasTotales: Number(ventas.total || 0),
+      totalPedidos: Number(pedidos.total || 0),
+      totalClientes: Number(clientes.total || 0),
+      totalProductos: Number(productos.total || 0),
+      pedidosPendientes: Number(pendientes.total || 0),
+      pedidosPreparando: Number(preparando.total || 0),
+      pedidosEnviados: Number(enviados.total || 0),
+      pedidosEntregados: Number(entregados.total || 0)
+    };
+  },
+
   // Mutaciones CRUD Productos
   crearProducto: (datos) => {
     const { titulo, autor, isbn, editorial, precio, precioAnterior, imagen, categoriaId, stock, descripcion, paginas, rating, resenasCount, destacado } = datos;
@@ -284,7 +348,16 @@ export const dbRepo = {
 
   // Mutacion de Negocio: Crear Pedido con transaccion e inventario
   crearPedido: (datos) => {
-    const { items, metodoPago, direccionEnvio, nombreCliente, emailCliente, usuarioId } = datos;
+    const {
+      items,
+      metodoPago,
+      direccionEnvio,
+      nombreCliente,
+      emailCliente,
+      usuarioId,
+      detallesPago,
+      referenciaPago
+    } = datos;
 
     if (!items || items.length === 0) {
       throw new Error('El pedido debe incluir al menos un producto.');
@@ -295,18 +368,24 @@ export const dbRepo = {
     const productosValidados = [];
 
     for (const item of items) {
+      const cantidad = Number(item.cantidad);
+      if (!Number.isInteger(cantidad) || cantidad <= 0) {
+        throw new Error(`Cantidad inválida para el producto con ID ${item.productoId}. Debe ser un número entero positivo.`);
+      }
+
       const prod = dbRepo.getProductoById(item.productoId);
       if (!prod) {
         throw new Error(`Producto con ID ${item.productoId} no encontrado en el catalogo.`);
       }
-      if (prod.stock < item.cantidad) {
-        throw new Error(`Stock insuficiente para "${prod.titulo}". Solicitado: ${item.cantidad}, Disponible: ${prod.stock}`);
+      if (prod.stock < cantidad) {
+        throw new Error(`Stock insuficiente para "${prod.titulo}". Solicitado: ${cantidad}, Disponible: ${prod.stock}`);
       }
-      const itemSubtotal = prod.precio * item.cantidad;
+
+      const itemSubtotal = prod.precio * cantidad;
       subtotal += itemSubtotal;
       productosValidados.push({
         producto: prod,
-        cantidad: item.cantidad,
+        cantidad: cantidad,
         precioUnitario: prod.precio,
         subtotal: itemSubtotal
       });
@@ -317,13 +396,32 @@ export const dbRepo = {
     const fecha = new Date().toISOString();
     const folio = `FOL-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
 
-    // 2. Ejecutar insercion y actualizacion de stock
+    const statusInicial = (metodoPago === 'OXXO_EFECTIVO' || metodoPago === 'TRANSFERENCIA_SPEI') ? 'PENDIENTE' : 'PAGADO';
+    const refFinal = referenciaPago || (metodoPago === 'OXXO_EFECTIVO' ? `OXXO-${Math.floor(10000000000000 + Math.random() * 90000000000000)}` : null);
+
+    // 2. Resolver usuarioId válido para prevenir error de FOREIGN KEY constraint
+    let validUsuarioId = null;
+    if (usuarioId !== undefined && usuarioId !== null && usuarioId !== '') {
+      const parsedId = Number(usuarioId);
+      if (!Number.isNaN(parsedId)) {
+        const u = db.prepare('SELECT id FROM usuarios WHERE id = ?').get(parsedId);
+        if (u) validUsuarioId = u.id;
+      }
+    }
+
+    // Si no se encontró por ID pero tenemos emailCliente, asociar si el usuario existe
+    if (!validUsuarioId && emailCliente) {
+      const u = db.prepare('SELECT id FROM usuarios WHERE LOWER(email) = LOWER(?)').get(emailCliente.trim());
+      if (u) validUsuarioId = u.id;
+    }
+
+    // 3. Ejecutar insercion y actualizacion de stock
     db.exec('BEGIN TRANSACTION;');
     try {
       // Insertar pedido
       const stmtPedido = db.prepare(`
-        INSERT INTO pedidos (folio, fecha, subtotal, envio, total, status, metodoPago, direccionEnvio, nombreCliente, emailCliente, usuarioId)
-        VALUES (?, ?, ?, ?, ?, 'PAGADO', ?, ?, ?, ?, ?)
+        INSERT INTO pedidos (folio, fecha, subtotal, envio, total, status, metodoPago, direccionEnvio, nombreCliente, emailCliente, usuarioId, detallesPago, referenciaPago)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       const pedidoInfo = stmtPedido.run(
         folio,
@@ -331,11 +429,14 @@ export const dbRepo = {
         subtotal,
         envio,
         total,
+        statusInicial,
         metodoPago || 'TARJETA_CREDITO',
         direccionEnvio,
         nombreCliente,
         emailCliente,
-        usuarioId || null
+        validUsuarioId,
+        detallesPago || null,
+        refFinal
       );
       const pedidoId = pedidoInfo.lastInsertRowid;
 

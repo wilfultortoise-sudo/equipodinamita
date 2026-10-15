@@ -92,6 +92,8 @@ export const typeDefs = `#graphql
     nombreCliente: String!
     emailCliente: String!
     usuarioId: ID
+    detallesPago: String
+    referenciaPago: String
     usuario: Usuario
     detalles: [DetallePedido!]!
   }
@@ -128,6 +130,26 @@ export const typeDefs = `#graphql
     nombreCliente: String!
     emailCliente: String!
     usuarioId: ID
+    detallesPago: String
+    referenciaPago: String
+  }
+
+  """Respuesta de autenticacion con token Bearer y datos del usuario"""
+  type AuthPayload {
+    token: String!
+    usuario: Usuario!
+  }
+  
+  """Indicadores principales del panel administrativo"""
+  type AdminKPIs {
+    ventasTotales: Float!
+    totalPedidos: Int!
+    totalClientes: Int!
+    totalProductos: Int!
+    pedidosPendientes: Int!
+    pedidosPreparando: Int!
+    pedidosEnviados: Int!
+    pedidosEntregados: Int!
   }
 
   """Respuesta de autenticacion con token Bearer y datos del usuario"""
@@ -137,6 +159,8 @@ export const typeDefs = `#graphql
   }
 
   type Query {
+    """Obtiene los indicadores principales del panel administrativo"""
+    adminKPIs: AdminKPIs!
     """Obtiene libros con filtros opcionales de categoria, busqueda y paginacion"""
     productos(categoriaId: ID, busqueda: String, limite: Int, desde: Int): [Producto!]!
 
