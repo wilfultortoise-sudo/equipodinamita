@@ -1,8 +1,9 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+const pageTitle = "Gestión de Órdenes | BiblioTech Store";
 ---
 
-<BaseLayout title="Gestión de Órdenes | BiblioTech Store">
+<AdminLayout pageTitle={pageTitle} >
 
   <main class="admin-page">
 
@@ -1083,4 +1084,4 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   </style>
 
-</BaseLayout>
+</AdminLayout>

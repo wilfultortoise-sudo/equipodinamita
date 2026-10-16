@@ -1,0 +1,481 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  pageTitle: string;
+}
+
+const { pageTitle } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{pageTitle}</title>
+  </head>
+
+  <body class="admin-layout">
+    <div class="admin-shell" id="admin-shell" hidden>
+      <aside class="admin-sidebar">
+        <a class="admin-brand" href="/admin">
+          <span class="admin-brand-icon">B</span>
+          <span>
+            <strong>BiblioTech</strong>
+            <small>Panel administrativo</small>
+          </span>
+        </a>
+
+        <div class="admin-nav-label">GENERAL</div>
+
+        <nav class="admin-nav" aria-label="Navegación administrativa">
+          <a class="admin-nav-link" href="/admin" data-admin-route="/admin">
+            <span aria-hidden="true">▦</span>
+            Dashboard
+          </a>
+
+          <a
+            class="admin-nav-link"
+            href="/admin/productos"
+            data-admin-route="/admin/productos"
+          >
+            <span aria-hidden="true">▤</span>
+            Productos e inventario
+          </a>
+
+          <a
+            class="admin-nav-link"
+            href="/admin/ordenes"
+            data-admin-route="/admin/ordenes"
+          >
+            <span aria-hidden="true">⇄</span>
+            Gestión de órdenes
+          </a>
+        </nav>
+
+        <div class="admin-sidebar-bottom">
+          <a class="admin-nav-link" href="/" title="Volver a la tienda">
+            <span aria-hidden="true">↗</span>
+            Ver tienda
+          </a>
+
+          <button class="admin-nav-link admin-logout" id="admin-logout" type="button">
+            <span aria-hidden="true">⇥</span>
+            Cerrar sesión
+          </button>
+        </div>
+      </aside>
+
+      <div class="admin-workspace">
+        <header class="admin-topbar">
+          <div>
+            <span class="admin-topbar-eyebrow">BIBLIOTECH / ADMINISTRACIÓN</span>
+            <div class="admin-topbar-title">BackOffice</div>
+          </div>
+
+          <div class="admin-session">
+            <span class="admin-session-dot"></span>
+            <span id="admin-session-name">Administrador</span>
+          </div>
+        </header>
+
+        <main class="admin-content">
+          <slot />
+        </main>
+      </div>
+    </div>
+
+    <div id="admin-access-message" class="admin-access-message" role="status">
+      Verificando acceso administrativo…
+    </div>
+
+    <div id="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+    <script is:inline>
+      window.showToast = function (message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+
+        const icon = document.createElement('span');
+        icon.style.fontWeight = '700';
+        icon.style.marginRight = '8px';
+        icon.textContent =
+          type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+
+        const text = document.createElement('span');
+        text.textContent = String(message ?? '');
+
+        toast.append(icon, text);
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(10px)';
+          toast.style.transition = 'all .3s ease';
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      };
+    </script>
+
+    <script>
+      import { authService } from '../services/auth.js';
+
+      const shell = document.getElementById('admin-shell');
+      const accessMessage = document.getElementById('admin-access-message');
+      const sessionName = document.getElementById('admin-session-name');
+      const logoutButton = document.getElementById('admin-logout'); 
+        if (logoutButton) {
+          logoutButton?.addEventListener('click', () => {
+             authService.logout();
+            window.location.replace('/login');
+          });
+        }
+
+      async function verifyAdminAccess() {
+        // Chat me ha recomendado mejor usar este proceso para que  
+        // la función de autorización consulte al backend incluso si hay un usuario guardado en localStorage.
+        // Así no dependemos únicamente de un rol almacenado en el navegador.
+    
+        const redirectPath = window.location.pathname + window.location.search;
+        const token = authService.getToken();
+
+        if (!token) {
+        window.location.replace(
+            `/login?redirect=${encodeURIComponent(redirectPath)}`
+        );
+        return;
+        }
+
+        // Obtener el usuario actual desde el backend.
+        const user = await authService.getMe();
+
+        if (!user || user.rol !== 'ADMIN') {
+        authService.logout();
+        window.location.replace('/');
+        return;
+        }
+       // Chat me ha recomendado cambiar este pedazo por el de arriba 
+        /*
+        const redirectPath = window.location.pathname + window.location.search;
+        const token = authService.getToken();
+
+        if (!token) {
+          window.location.replace(
+            `/login?redirect=${encodeURIComponent(redirectPath)}`
+          );
+          return;
+        }
+
+        let user = authService.getUser();
+
+        // Si no hay usuario guardado, intenta recuperarlo del backend.
+        if (!user) {
+          user = await authService.getMe();
+        }
+
+        if (!user || user.rol !== 'ADMIN') {
+          authService.logout();
+          window.location.replace('/');
+          return;
+        }
+
+        sessionName.textContent = user.nombre || user.email || 'Administrador';
+
+        const currentPath = window.location.pathname.replace(/\/+$/, '') || '/admin';
+
+        document.querySelectorAll('[data-admin-route]').forEach((link) => {
+          const route = link.getAttribute('data-admin-route');
+          const active =
+            route === '/admin'
+              ? currentPath === '/admin'
+              : currentPath === route || currentPath.startsWith(route + '/');
+
+          link.classList.toggle('active', active);
+          if (active) link.setAttribute('aria-current', 'page');
+          else link.removeAttribute('aria-current');
+        });
+
+        accessMessage.hidden = true;
+        shell.hidden = false;
+        */
+      }
+
+      verifyAdminAccess().catch(() => {
+        authService.logout();
+        window.location.replace('/');
+      });
+    </script>
+
+    <style>
+      :global(html) {
+        min-height: 100%;
+        background: #f5f7fb;
+      }
+
+      :global(body.admin-layout) {
+        margin: 0;
+        min-height: 100vh;
+        color: #182235;
+        background: #f5f7fb;
+      }
+
+      .admin-shell {
+        min-height: 100vh;
+      }
+
+      .admin-shell[hidden],
+      .admin-access-message[hidden] {
+        display: none !important;
+      }
+
+      .admin-sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 20;
+        display: flex;
+        flex-direction: column;
+        width: 254px;
+        box-sizing: border-box;
+        padding: 26px 16px 18px;
+        color: #e8eef8;
+        background: #142238;
+      }
+
+      .admin-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 8px 30px;
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .admin-brand-icon {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        place-items: center;
+        border-radius: 13px;
+        color: white;
+        background: #3768d9;
+        font-size: 23px;
+        font-weight: 800;
+      }
+
+      .admin-brand strong,
+      .admin-brand small {
+        display: block;
+      }
+
+      .admin-brand strong {
+        font-size: 17px;
+        letter-spacing: .2px;
+      }
+
+      .admin-brand small {
+        margin-top: 4px;
+        color: #aab9cf;
+        font-size: 11px;
+      }
+
+      .admin-nav-label {
+        padding: 0 12px 12px;
+        color: #91a2bb;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+      }
+
+      .admin-nav {
+        display: grid;
+        gap: 7px;
+      }
+
+      .admin-nav-link {
+        display: flex;
+        width: 100%;
+        box-sizing: border-box;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border: 0;
+        border-radius: 9px;
+        color: #c5d0e0;
+        background: transparent;
+        font: inherit;
+        font-size: 13px;
+        text-align: left;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background .18s ease, color .18s ease;
+      }
+
+      .admin-nav-link > span {
+        width: 20px;
+        text-align: center;
+        font-size: 18px;
+      }
+
+      .admin-nav-link:hover,
+      .admin-nav-link.active {
+        color: white;
+        background: #293d5a;
+      }
+
+      .admin-nav-link.active {
+        box-shadow: inset 3px 0 #78a0ff;
+      }
+
+      .admin-sidebar-bottom {
+        display: grid;
+        gap: 7px;
+        margin-top: auto;
+        padding-top: 20px;
+        border-top: 1px solid #304057;
+      }
+
+      .admin-workspace {
+        min-width: 0;
+        min-height: 100vh;
+        margin-left: 254px;
+      }
+
+      .admin-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        min-height: 76px;
+        box-sizing: border-box;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 30px;
+        border-bottom: 1px solid #e8edf4;
+        background: rgb(255 255 255 / 96%);
+        backdrop-filter: blur(12px);
+      }
+
+      .admin-topbar-eyebrow {
+        color: #78869b;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 1.4px;
+      }
+
+      .admin-topbar-title {
+        margin-top: 5px;
+        font-size: 17px;
+        font-weight: 750;
+      }
+
+      .admin-session {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: #42516a;
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .admin-session-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #20a875;
+      }
+
+      .admin-content {
+        min-width: 0;
+        padding: 24px 30px 40px;
+      }
+
+      .admin-access-message {
+        padding: 60px 20px;
+        color: #536177;
+        font-size: 14px;
+        text-align: center;
+      }
+
+      #toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: grid;
+        gap: 10px;
+      }
+
+      @media (max-width: 900px) {
+        .admin-sidebar {
+          width: 210px;
+          padding-inline: 12px;
+        }
+
+        .admin-workspace {
+          margin-left: 210px;
+        }
+
+        .admin-topbar {
+          padding-inline: 20px;
+        }
+
+        .admin-content {
+          padding: 20px;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .admin-sidebar {
+          position: static;
+          width: 100%;
+          padding: 14px;
+        }
+
+        .admin-brand {
+          padding-bottom: 16px;
+        }
+
+        .admin-nav-label {
+          padding-bottom: 8px;
+        }
+
+        .admin-nav {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .admin-nav-link {
+          gap: 7px;
+          padding: 10px 8px;
+          font-size: 11px;
+        }
+
+        .admin-sidebar-bottom {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          margin-top: 12px;
+          padding-top: 12px;
+        }
+
+        .admin-workspace {
+          margin-left: 0;
+        }
+
+        .admin-topbar {
+          position: static;
+          min-height: 65px;
+          padding: 12px 16px;
+        }
+
+        .admin-content {
+          padding: 16px 12px 28px;
+        }
+      }
+    </style>
+  </body>
+</html>
