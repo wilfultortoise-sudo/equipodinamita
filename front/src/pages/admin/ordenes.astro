@@ -9,9 +9,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     <section class="admin-header">
       <div>
         <span class="admin-label">BIBLIOTECH STORE</span>
-        <h1>Gestión de Órdenes</h1>
+        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+          <h1>Gestión de Órdenes</h1>
+          <span id="ws-status-badge" class="ws-badge ws-connecting">🟡 Conectando WS...</span>
+        </div>
         <p>
-          Consulta y administra los pedidos realizados en la tienda.
+          Consulta y supervisa las ventas y pedidos en tiempo real con WebSocket.
         </p>
       </div>
 
@@ -758,8 +761,157 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
 
 
-    cargarOrdenes();
+    // --------------------------------------------------
+    // FASE 4: GraphQL Subscription pedidoCreado (WebSocket en tiempo real)
+    // --------------------------------------------------
+    function iniciarWebSocketSuscripcion(): void {
+      const token = localStorage.getItem('auth_token') || '';
+      const wsStatusBadge = document.getElementById('ws-status-badge');
 
+      // Determinar endpoint WebSocket oficial
+      let wsBase = 'ws://localhost:4000/graphql';
+      try {
+        if (API_URL.startsWith('https')) {
+          wsBase = API_URL.replace('https', 'wss').replace(/\/$/, '') + '/graphql';
+        } else if (API_URL.startsWith('http')) {
+          const parsed = new URL(API_URL);
+          wsBase = `ws://${parsed.hostname}:4000/graphql`;
+        }
+      } catch {}
+
+      let socket: WebSocket | null = null;
+      let reconnectTimer: any = null;
+
+      function conectar() {
+        try {
+          socket = new WebSocket(wsBase, 'graphql-transport-ws');
+
+          socket.onopen = () => {
+            if (wsStatusBadge) {
+              wsStatusBadge.className = 'ws-badge ws-connecting';
+              wsStatusBadge.textContent = '🟡 Autenticando WS...';
+            }
+            // Handshake con subprotocolo graphql-transport-ws
+            socket?.send(JSON.stringify({
+              type: 'connection_init',
+              payload: {
+                authorization: token ? `Bearer ${token}` : ''
+              }
+            }));
+          };
+
+          socket.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+
+              if (data.type === 'connection_ack') {
+                if (wsStatusBadge) {
+                  wsStatusBadge.className = 'ws-badge ws-online';
+                  wsStatusBadge.textContent = '🟢 En vivo (WS Conectado)';
+                }
+
+                // Suscribirse en tiempo real al evento pedidoCreado
+                socket?.send(JSON.stringify({
+                  id: 'sub_pedidos_admin',
+                  type: 'subscribe',
+                  payload: {
+                    query: `
+                      subscription OnPedidoCreado {
+                        pedidoCreado {
+                          id
+                          folio
+                          fecha
+                          subtotal
+                          envio
+                          total
+                          status
+                          metodoPago
+                          direccionEnvio
+                          nombreCliente
+                          emailCliente
+                          usuarioId
+                          detalles {
+                            id
+                            cantidad
+                            precioUnitario
+                            subtotal
+                            producto {
+                              id
+                              titulo
+                              autor
+                              imagen
+                            }
+                          }
+                        }
+                      }
+                    `
+                  }
+                }));
+              } else if (data.type === 'next' && data.payload?.data?.pedidoCreado) {
+                const nuevoPedido = data.payload.data.pedidoCreado;
+                recibirNuevoPedidoEnVivo(nuevoPedido);
+              }
+            } catch (err) {
+              console.warn('[WS] Error interpretando mensaje:', err);
+            }
+          };
+
+          socket.onclose = () => {
+            if (wsStatusBadge) {
+              wsStatusBadge.className = 'ws-badge ws-offline';
+              wsStatusBadge.textContent = '🔴 WS Desconectado';
+            }
+            clearTimeout(reconnectTimer);
+            reconnectTimer = setTimeout(conectar, 4000);
+          };
+
+          socket.onerror = () => {
+            if (wsStatusBadge) {
+              wsStatusBadge.className = 'ws-badge ws-offline';
+              wsStatusBadge.textContent = '🔴 Reconectando WS...';
+            }
+          };
+        } catch (e) {
+          console.warn('[WS] Fallo al inicializar WebSocket:', e);
+        }
+      }
+
+      function recibirNuevoPedidoEnVivo(pedido: any): void {
+        if (!ordersContainer) return;
+
+        // Remover mensaje de vacío si existía
+        const emptyEl = ordersContainer.querySelector('.empty-card');
+        if (emptyEl) emptyEl.remove();
+
+        // Evitar duplicados
+        const existingCard = ordersContainer.querySelector(`[data-order-folio="${pedido.folio}"]`);
+        if (existingCard) return;
+
+        // Crear tarjeta y animar su llegada en tiempo real
+        const card = crearPedidoHTML(pedido);
+        card.setAttribute('data-order-folio', pedido.folio);
+        card.classList.add('new-order-pulse');
+
+        // Insertar al inicio de la lista
+        ordersContainer.insertBefore(card, ordersContainer.firstChild);
+
+        // Actualizar contador
+        if (totalOrdersElement) {
+          const actual = Number(totalOrdersElement.textContent || 0);
+          totalOrdersElement.textContent = String(actual + 1);
+        }
+
+        // Alerta visual Toast
+        if ((window as any).showToast) {
+          (window as any).showToast(`🔔 ¡Nueva orden recibida en vivo: ${pedido.folio}! Total: $${pedido.total} MXN`, 'success');
+        }
+      }
+
+      conectar();
+    }
+
+    cargarOrdenes();
+    iniciarWebSocketSuscripcion();
   </script>
 
 
@@ -1073,12 +1225,53 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         grid-template-columns: 1fr;
       }
 
-      .orders-summary {
-        align-items: flex-start;
-        gap: 15px;
-        flex-direction: column;
-      }
+    .ws-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      transition: all 0.25s ease;
+    }
 
+    .ws-online {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+
+    .ws-connecting {
+      background: #fef9c3;
+      color: #a16207;
+      border: 1px solid #fde047;
+    }
+
+    .ws-offline {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+    }
+
+    @keyframes highlightNewOrder {
+      0% {
+        background-color: #dcfce7;
+        transform: translateY(-8px) scale(1.01);
+        box-shadow: 0 10px 25px rgba(22, 163, 74, 0.25);
+      }
+      70% {
+        background-color: #f0fdf4;
+      }
+      100% {
+        background-color: white;
+        transform: translateY(0) scale(1);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      }
+    }
+
+    .new-order-pulse {
+      animation: highlightNewOrder 2.5s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
   </style>
