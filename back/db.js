@@ -341,12 +341,17 @@ export const dbRepo = {
   },
 
   actualizarStock: (id, stock) => {
+    const current = dbRepo.getProductoById(id);
+    if (!current) throw new Error(`Producto con ID ${id} no encontrado.`);
+    const newStock = Math.max(0, parseInt(stock, 10) || 0);
     const stmt = db.prepare('UPDATE productos SET stock = ? WHERE id = ?');
-    stmt.run(stock, id);
+    stmt.run(newStock, id);
     return dbRepo.getProductoById(id);
   },
 
   eliminarProducto: (id) => {
+    const current = dbRepo.getProductoById(id);
+    if (!current) return false;
     const stmt = db.prepare('DELETE FROM productos WHERE id = ?');
     const info = stmt.run(id);
     return info.changes > 0;

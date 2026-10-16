@@ -72,7 +72,7 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
               </div>
             </div>
 
-            <!-- Sección 2: Método de Pago Seguro (Hugo - Pasarela Multimétodo Interactiva) -->
+            <!-- Sección 2: Pasarela Multimétodo Interactiva (Hugo - PaymentGateway Island) -->
             <div class="card form-section-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
               <PaymentGateway client:load />
             </div>
@@ -125,8 +125,12 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
               </div>
               <div class="guarantee-item">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                <span>Transacción 100% Cifrada SSL</span>
+                <span>Transacción 100% Cifrada SSL (256 bits)</span>
               </div>
+            </div>
+
+            <div class="back-cart-link">
+              <a href="/carrito">← Modificar carrito de compras</a>
             </div>
           </div>
         </aside>
@@ -164,7 +168,7 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
 
   .checkout-layout {
     display: grid;
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: 1fr 390px;
     gap: var(--spacing-xl);
     align-items: start;
   }
@@ -193,6 +197,7 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
     padding: var(--spacing-lg);
     background: var(--color-surface);
     margin-bottom: var(--spacing-lg);
+    border-radius: var(--radius-lg);
   }
 
   .section-title-row {
@@ -281,105 +286,95 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
 
   .btn-lg {
     padding: 0.85rem 1.5rem;
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     font-weight: 700;
   }
 
-  .alert-error {
-    background-color: #fee2e2;
-    border: 1px solid #f87171;
-    color: #991b1b;
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-md);
-    font-size: 0.9rem;
-    margin-bottom: var(--spacing-md);
-  }
-
-  /* Summary Card */
+  /* Resumen Columna */
   .checkout-summary-card {
-    padding: var(--spacing-lg);
-    background: var(--color-surface);
     position: sticky;
-    top: 5rem;
+    top: 2rem;
+    padding: var(--spacing-lg);
   }
 
   .checkout-summary-card h3 {
-    margin: 0 0 var(--spacing-md) 0;
-    padding-bottom: var(--spacing-sm);
+    margin-top: 0;
+    margin-bottom: var(--spacing-md);
     border-bottom: 1px solid var(--color-border);
-    font-size: 1.15rem;
+    padding-bottom: 0.5rem;
   }
 
   .order-items-preview-list {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    max-height: 250px;
+    max-height: 280px;
     overflow-y: auto;
     margin-bottom: var(--spacing-md);
-    padding-bottom: var(--spacing-sm);
-    border-bottom: 1px solid var(--color-border);
+    padding-right: 0.25rem;
   }
 
-  .order-item-mini {
+  :global(.order-item-mini) {
     display: flex;
     gap: 0.75rem;
     align-items: center;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
   }
 
-  .mini-thumb {
-    width: 36px;
-    height: 48px;
+  :global(.mini-thumb) {
+    width: 44px;
+    height: 60px;
     object-fit: cover;
     border-radius: var(--radius-sm);
-    background: #e2e8f0;
+    flex-shrink: 0;
   }
 
-  .mini-details {
+  :global(.mini-details) {
     flex: 1;
+    overflow: hidden;
   }
 
-  .mini-title {
-    font-weight: 600;
+  :global(.mini-title) {
     display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
   }
 
-  .mini-meta {
+  :global(.mini-meta) {
+    display: block;
     color: var(--color-text-muted);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
   }
 
-  .mini-price {
-    font-weight: 700;
-    color: var(--color-text);
+  :global(.mini-price) {
+    font-weight: 600;
+    white-space: nowrap;
   }
 
   .summary-breakdown {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--spacing-md);
     margin-bottom: var(--spacing-md);
   }
 
   .breakdown-row {
     display: flex;
     justify-content: space-between;
+    margin-bottom: 0.5rem;
     font-size: 0.9rem;
   }
 
-  .row-label {
-    color: var(--color-text-muted);
-  }
-
-  .row-val {
+  .row-val-discount {
+    color: #16a34a;
     font-weight: 600;
   }
 
   .breakdown-sep {
     height: 1px;
     background: var(--color-border);
-    margin-block: 0.25rem;
+    margin-block: 0.5rem;
   }
 
   .total-row {
@@ -417,6 +412,26 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
     color: #10b981;
     flex-shrink: 0;
   }
+
+  .back-cart-link {
+    text-align: center;
+    margin-top: var(--spacing-md);
+    font-size: 0.85rem;
+  }
+
+  .back-cart-link a {
+    color: var(--color-primary);
+  }
+
+  .alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+    font-size: 0.9rem;
+  }
 </style>
 
 <script>
@@ -424,7 +439,6 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
   import { cartService } from '../services/cart.js';
   import { apiClient } from '../services/apiClient.js';
 
-  const telefonoClienteInput = document.getElementById('telefonoCliente') as HTMLInputElement;
   const authBox = document.getElementById('auth-required-box') as HTMLElement;
   const mainView = document.getElementById('checkout-main-view') as HTMLElement;
   const form = document.getElementById('checkout-form') as HTMLFormElement;
@@ -438,12 +452,6 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
   const discountEl = document.getElementById('chk-discount') as HTMLElement;
   const shippingEl = document.getElementById('chk-shipping') as HTMLElement;
   const totalEl = document.getElementById('chk-total') as HTMLElement;
-
-  if (telefonoClienteInput) {
-    telefonoClienteInput.addEventListener('input', () => {
-      telefonoClienteInput.value = telefonoClienteInput.value.replace(/\D/g, '').slice(0, 10);
-    });
-  }
 
   // 1. Verificación de Autenticación
   if (!authService.isAuthenticated()) {
@@ -459,7 +467,7 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
       if ((window as any).showToast) (window as any).showToast('Tu carrito está vacío. Agrega libros primero.', 'info');
       setTimeout(() => {
         window.location.href = '/catalogo';
-      }, 500);
+      }, 400);
     }
 
     // 3. Prellenar datos del usuario
@@ -561,7 +569,8 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
         // Validar datos de contacto y entrega
         const nombreCliente = (document.getElementById('nombreCliente') as HTMLInputElement).value.trim();
         const emailCliente = (document.getElementById('emailCliente') as HTMLInputElement).value.trim();
-        const telefonoCliente = (document.getElementById('telefonoCliente') as HTMLInputElement).value.trim();
+        const telefonoClienteInput = document.getElementById('telefonoCliente') as HTMLInputElement;
+        const telefonoCliente = telefonoClienteInput ? telefonoClienteInput.value.trim() : '';
         const direccionEnvio = (document.getElementById('direccionEnvio') as HTMLTextAreaElement).value.trim();
         const ciudad = (document.getElementById('ciudadCliente') as HTMLInputElement).value.trim();
 

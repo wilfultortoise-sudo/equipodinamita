@@ -1,4 +1,5 @@
 import { dbRepo } from './db.js';
+import { pubsub, TOPICS } from './pubsub.js';
 
 // ============================================================
 // PROTECCIÓN DE ROL
@@ -17,6 +18,16 @@ function requireAdmin(context) {
     throw new Error('Acceso denegado: se requiere el rol ADMIN.');
   }
   return user;
+}
+
+function safePublish(topic, payload) {
+  try {
+    if (pubsub && typeof pubsub.publish === 'function') {
+      pubsub.publish(topic, payload);
+    }
+  } catch (err) {
+    console.warn(`[PubSub] Error al publicar en ${topic}:`, err.message);
+  }
 }
 
 // ============================================================
@@ -89,16 +100,7 @@ export const resolvers = {
   },
 
   // ==========================================================
-  // PRODUCTO
-  // ==========================================================
-  Producto: {
-    categoria: (parent) => {
-      return dbRepo.getCategoriaById(parent.categoriaId);
-    }
-  },
-
-  // ==========================================================
-  // CATEGORIA
+  // RELACIONES (Field Resolvers)
   // ==========================================================
   Categoria: {
     productos: (parent) => {
@@ -106,34 +108,28 @@ export const resolvers = {
     }
   },
 
-  // ==========================================================
-  // USUARIO
-  // ==========================================================
+  Producto: {
+    categoria: (parent) => {
+      return dbRepo.getCategoriaById(parent.categoriaId);
+    }
+  },
+
   Usuario: {
     pedidos: (parent) => {
       return dbRepo.getPedidosByUsuarioId(parent.id);
     }
   },
 
-  // ==========================================================
-  // PEDIDO
-  // ==========================================================
   Pedido: {
     usuario: (parent) => {
-      if (!parent.usuarioId) {
-        return null;
-      }
+      if (!parent.usuarioId) return null;
       return dbRepo.getUsuarioById(parent.usuarioId);
     },
-
     detalles: (parent) => {
       return dbRepo.getDetallesByPedidoId(parent.id);
     }
   },
 
-  // ==========================================================
-  // DETALLE DE PEDIDO
-  // ==========================================================
   DetallePedido: {
     producto: (parent) => {
       return dbRepo.getProductoById(parent.productoId);
@@ -153,15 +149,21 @@ export const resolvers = {
     },
 
     crearProducto: (_, { datos }) => {
-      return dbRepo.crearProducto(datos);
+      const nuevoProducto = dbRepo.crearProducto(datos);
+      safePublish(TOPICS.STOCK_ACTUALIZADO, { stockActualizado: nuevoProducto });
+      return nuevoProducto;
     },
 
     actualizarProducto: (_, { id, datos }) => {
-      return dbRepo.actualizarProducto(id, datos);
+      const productoActualizado = dbRepo.actualizarProducto(id, datos);
+      safePublish(TOPICS.STOCK_ACTUALIZADO, { stockActualizado: productoActualizado });
+      return productoActualizado;
     },
 
     actualizarStock: (_, { id, stock }) => {
-      return dbRepo.actualizarStock(id, stock);
+      const productoActualizado = dbRepo.actualizarStock(id, stock);
+      safePublish(TOPICS.STOCK_ACTUALIZADO, { stockActualizado: productoActualizado });
+      return productoActualizado;
     },
 
     eliminarProducto: (_, { id }, context) => {
@@ -177,11 +179,40 @@ export const resolvers = {
         if (!datos.emailCliente) datos.emailCliente = context.currentUser.email;
       }
 
-      return dbRepo.crearPedido(datos);
+      const nuevoPedido = dbRepo.crearPedido(datos);
+
+      // 1. Notificar inmediatamente la creación del pedido vía WebSocket
+      safePublish(TOPICS.PEDIDO_CREADO, { pedidoCreado: nuevoPedido });
+
+      // 2. Notificar actualización de stock de cada producto involucrado
+      if (datos?.items && Array.isArray(datos.items)) {
+        for (const item of datos.items) {
+          const productoAfectado = dbRepo.getProductoById(item.productoId);
+          if (productoAfectado) {
+            safePublish(TOPICS.STOCK_ACTUALIZADO, { stockActualizado: productoAfectado });
+          }
+        }
+      }
+
+      return nuevoPedido;
     },
 
     actualizarEstadoPedido: (_, { id, status }) => {
-      return dbRepo.actualizarEstadoPedido(id, status);
+      const pedidoActualizado = dbRepo.actualizarEstadoPedido(id, status);
+      safePublish(TOPICS.PEDIDO_ACTUALIZADO, { pedidoActualizado });
+      return pedidoActualizado;
+    }
+  },
+
+  Subscription: {
+    pedidoCreado: {
+      subscribe: () => pubsub.asyncIterator([TOPICS.PEDIDO_CREADO])
+    },
+    pedidoActualizado: {
+      subscribe: () => pubsub.asyncIterator([TOPICS.PEDIDO_ACTUALIZADO])
+    },
+    stockActualizado: {
+      subscribe: () => pubsub.asyncIterator([TOPICS.STOCK_ACTUALIZADO])
     }
   }
 };
