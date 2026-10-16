@@ -1,714 +1,885 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
 ---
 
-<BaseLayout title="Panel Administrativo | BiblioTech Store">
+<BaseLayout pageTitle={pageTitle}>
+  <div class="admin-page">
+    <div class="container admin-container">
 
-  <main class="admin-page">
-
-    <section class="admin-header">
-      <div>
-        <span class="admin-label">BIBLIOTECH STORE</span>
-        <h1>Panel Administrativo</h1>
-        <p>
-          Administración general de la tienda, pedidos y estadísticas.
-        </p>
-      </div>
-
-      <a href="/admin/ordenes" class="orders-button">
-        Gestionar órdenes
-      </a>
-    </section>
-
-
-    <!-- Estado de acceso -->
-    <section id="access-loading" class="message-card">
-      Verificando permisos...
-    </section>
-
-
-    <!-- Panel -->
-    <section id="admin-content" style="display:none;">
-
-      <div class="welcome-card">
-        <div>
-          <span>Administrador</span>
-          <h2 id="admin-name">Cargando...</h2>
+      <!-- Verificación de Seguridad y Rol ADMIN (Bloque B - Parte 3) -->
+      <div id="admin-auth-guard" class="card auth-guard-card" style="display: none;">
+        <div class="guard-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
         </div>
-
-        <div class="admin-badge">
-          ADMIN
+        <h2 id="guard-title">Acceso Restringido para Administradores</h2>
+        <p id="guard-message">Debes iniciar sesión con una cuenta autorizada con rol ADMIN para acceder al Panel de Control.</p>
+        <div class="guard-actions">
+          <a href="/login?redirect=/admin" class="btn btn-primary" id="guard-login-btn">Iniciar Sesión</a>
+          <a href="/" class="btn btn-outline">Volver a la Tienda</a>
         </div>
       </div>
 
+      <!-- Vista Principal del Dashboard (si está autenticado como ADMIN) -->
+      <div id="admin-dashboard-view" style="display: none;">
 
-      <!-- KPIs -->
-      <section class="kpi-grid">
-
-        <article class="kpi-card">
-          <div class="kpi-icon">💰</div>
+        <!-- Header Dashboard -->
+        <div class="dashboard-header">
           <div>
-            <span>Ventas totales</span>
-            <strong id="ventas-totales">$0.00</strong>
-          </div>
-        </article>
-
-
-        <article class="kpi-card">
-          <div class="kpi-icon">📦</div>
-          <div>
-            <span>Total de pedidos</span>
-            <strong id="total-pedidos">0</strong>
-          </div>
-        </article>
-
-
-        <article class="kpi-card">
-          <div class="kpi-icon">👥</div>
-          <div>
-            <span>Clientes</span>
-            <strong id="total-clientes">0</strong>
-          </div>
-        </article>
-
-
-        <article class="kpi-card">
-          <div class="kpi-icon">📚</div>
-          <div>
-            <span>Productos</span>
-            <strong id="total-productos">0</strong>
-          </div>
-        </article>
-
-      </section>
-
-
-      <!-- Estados de pedidos -->
-      <section class="status-section">
-
-        <div class="section-title">
-          <h2>Estado de pedidos</h2>
-          <span>Resumen actual</span>
-        </div>
-
-
-        <div class="status-grid">
-
-          <article class="status-card pending">
-            <span>Pendientes</span>
-            <strong id="pedidos-pendientes">0</strong>
-          </article>
-
-
-          <article class="status-card preparing">
-            <span>Preparando</span>
-            <strong id="pedidos-preparando">0</strong>
-          </article>
-
-
-          <article class="status-card shipped">
-            <span>Enviados</span>
-            <strong id="pedidos-enviados">0</strong>
-          </article>
-
-
-          <article class="status-card delivered">
-            <span>Entregados</span>
-            <strong id="pedidos-entregados">0</strong>
-          </article>
-
-        </div>
-
-      </section>
-
-
-      <!-- Acciones rápidas -->
-      <section class="quick-section">
-
-        <div class="section-title">
-          <h2>Acciones rápidas</h2>
-        </div>
-
-        <div class="quick-grid">
-
-            
-
-          <a href="/admin/ordenes" class="quick-card">
-            <span class="quick-icon">📦</span>
-            <div>
-              <strong>Gestionar órdenes</strong>
-              <p>Consultar pedidos y actualizar su estado.</p>
+            <div class="admin-badge-row">
+              <span class="badge badge-primary">🛡️ Panel Administrativo</span>
+              <span id="admin-user-tag" class="admin-user-tag">Admin: ...</span>
             </div>
-          </a>
-          
-
-
-          <a href="/catalogo" class="quick-card">
-            <span class="quick-icon">📚</span>
-            <div>
-              <strong>Ver catálogo</strong>
-              <p>Consultar los productos disponibles.</p>
-            </div>
-          </a>
-
-          <a href="/admin/productos" class="quick-card">
-              <span>📚</span>
-              <div>
-                <strong>Gestionar Productos</strong>
-                <p>Agregar, modificar y eliminar productos</p>
-              </div>
+            <h1>Dashboard General</h1>
+            <p class="header-sub">Supervisa el rendimiento de ventas, estado de pedidos e inventario en tiempo real.</p>
+          </div>
+          <div class="header-actions">
+            <a href="/admin/productos" class="btn btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+              Administrar Catálogo (CRUD)
             </a>
-
+            <button id="btn-refresh-dashboard" class="btn btn-outline btn-sm">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              Actualizar Datos
+            </button>
+          </div>
         </div>
 
-      </section>
+        <!-- Tarjetas KPIs Principales (Bloque B - Parte 3) -->
+        <div class="kpi-grid">
+          <div class="card kpi-card">
+            <div class="kpi-icon-box kpi-icon-green">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+            <div class="kpi-details">
+              <span class="kpi-label">Ventas Totales</span>
+              <span id="kpi-total-revenue" class="kpi-val">$0.00 MXN</span>
+              <span class="kpi-sub">Ingresos brutos acumulados</span>
+            </div>
+          </div>
 
-    </section>
+          <div class="card kpi-card">
+            <div class="kpi-icon-box kpi-icon-blue">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+            </div>
+            <div class="kpi-details">
+              <span class="kpi-label">Órdenes Registradas</span>
+              <span id="kpi-total-orders" class="kpi-val">0</span>
+              <span class="kpi-sub" id="kpi-pending-orders">0 en preparación</span>
+            </div>
+          </div>
 
+          <div class="card kpi-card">
+            <div class="kpi-icon-box kpi-icon-indigo">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            </div>
+            <div class="kpi-details">
+              <span class="kpi-label">Libros en Catálogo</span>
+              <span id="kpi-total-products" class="kpi-val">0</span>
+              <span class="kpi-sub" id="kpi-total-inventory-units">0 unidades en stock</span>
+            </div>
+          </div>
 
-    <!-- Error de acceso -->
-    <section id="access-error" class="message-card error" style="display:none;">
-      <h2>Acceso denegado</h2>
-      <p id="access-error-message">
-        No tienes permisos para acceder a esta sección.
-      </p>
+          <div class="card kpi-card">
+            <div class="kpi-icon-box kpi-icon-purple">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            </div>
+            <div class="kpi-details">
+              <span class="kpi-label">Ticket Promedio</span>
+              <span id="kpi-avg-ticket" class="kpi-val">$0.00 MXN</span>
+              <span class="kpi-sub">Promedio por compra</span>
+            </div>
+          </div>
+        </div>
 
-      <a href="/" class="back-button">
-        Volver al inicio
-      </a>
-    </section>
+        <!-- Sección de Alertas Rápidas y Accesos -->
+        <div class="quick-access-banner card">
+          <div class="banner-text">
+            <h3>⚡ Control de Inventario y Catálogo</h3>
+            <p>¿Deseas agregar nuevos libros, editar precios o actualizar existencias con botones rápidos?</p>
+          </div>
+          <div class="banner-actions">
+            <a href="/admin/productos?action=new" class="btn btn-primary">
+              + Registrar Nuevo Libro
+            </a>
+            <a href="/admin/productos" class="btn btn-outline">
+              Ver Tabla de Inventario
+            </a>
+          </div>
+        </div>
 
-  </main>
+        <!-- GESTIÓN DE ÓRDENES (Bloque B - Parte 3) -->
+        <div class="section-title-row">
+          <div>
+            <h2>Gestión de Órdenes y Envíos</h2>
+            <p style="color:var(--color-text-muted); margin:0; font-size:0.9rem;">Visualiza los pedidos de todos los usuarios y actualiza su estado de entrega en tiempo real.</p>
+          </div>
+        </div>
 
+        <!-- Filtros de Órdenes -->
+        <div class="card filter-bar-card">
+          <div class="filter-controls">
+            <div class="search-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="filter-order-search" class="form-input search-input" placeholder="Buscar por Folio, Cliente o Correo..." />
+            </div>
 
-  <script>
-  const API_URL =
-    import.meta.env.PUBLIC_API_URL ||
-    'http://localhost:4000/';
+            <div class="select-group">
+              <select id="filter-order-status" class="form-select">
+                <option value="">Todos los Estados</option>
+                <option value="PAGADO">PAGADO</option>
+                <option value="PREPARANDO">PREPARANDO</option>
+                <option value="ENVIADO">ENVIADO</option>
+                <option value="ENTREGADO">ENTREGADO</option>
+                <option value="PENDIENTE">PENDIENTE</option>
+                <option value="CANCELADO">CANCELADO</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
-  const loadingElement = document.getElementById('access-loading');
-  const contentElement = document.getElementById('admin-content');
-  const errorElement = document.getElementById('access-error');
-  const errorMessage = document.getElementById('access-error-message');
-  const adminNameElement = document.getElementById('admin-name');
+        <!-- Tabla de Órdenes -->
+        <div class="card table-card">
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Folio</th>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th>Método de Pago</th>
+                  <th>Total</th>
+                  <th style="min-width: 170px;">Estado de Orden</th>
+                  <th style="text-align: right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="orders-table-body">
+                <tr>
+                  <td colspan="7" style="text-align:center; padding: 2.5rem; color: var(--color-text-muted);">
+                    Cargando órdenes desde el servidor...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-  function mostrarError(mensaje: string): void {
-    if (loadingElement) {
-      loadingElement.style.display = 'none';
-    }
+          <div id="orders-empty-msg" style="display: none;" class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+            <p>No se encontraron pedidos con los filtros aplicados.</p>
+          </div>
+        </div>
 
-    if (contentElement) {
-      contentElement.style.display = 'none';
-    }
+      </div>
 
-    if (errorElement) {
-      errorElement.style.display = 'block';
-    }
+    </div>
+  </div>
 
-    if (errorMessage) {
-      errorMessage.textContent = mensaje;
-    }
+  <!-- MODAL: Detalle de Orden -->
+  <div id="order-detail-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modal-order-folio">Detalle de Pedido</h3>
+        <button id="modal-order-close" class="modal-close" type="button">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-order-content">
+        <!-- Renderizado dinámicamente -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-close-order-modal" class="btn btn-primary">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+</BaseLayout>
+
+<style>
+  .admin-page {
+    padding: var(--spacing-xl) 0 var(--spacing-2xl);
+    min-height: 85vh;
   }
 
-  async function cargarPanelAdmin(): Promise<void> {
+  /* Auth Guard */
+  .auth-guard-card {
+    max-width: 550px;
+    margin: 4rem auto;
+    text-align: center;
+    padding: 3rem 2rem;
+    border-radius: var(--radius-lg);
+  }
 
-    const token = localStorage.getItem('auth_token');
-    const userRaw = localStorage.getItem('auth_user');
+  .guard-icon {
+    color: #dc2626;
+    margin-bottom: 1rem;
+  }
 
-    // --------------------------------------------------
-    // 1. Verificar sesión local
-    // --------------------------------------------------
+  .auth-guard-card h2 {
+    margin: 0 0 0.5rem 0;
+    color: var(--color-text);
+  }
 
-    if (!token || !userRaw) {
-      window.location.href = '/login?redirect=/admin';
-      return;
+  .auth-guard-card p {
+    color: var(--color-text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .guard-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  /* Header */
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-xl);
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .admin-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .admin-user-tag {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+  }
+
+  .dashboard-header h1 {
+    font-size: 2.1rem;
+    font-weight: 800;
+    margin: 0 0 0.25rem 0;
+    color: var(--color-text);
+  }
+
+  .header-sub {
+    color: var(--color-text-muted);
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  /* KPI Grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .kpi-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 1.15rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .kpi-icon-box {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .kpi-icon-green { background: #d1fae5; color: #059669; }
+  .kpi-icon-blue { background: #dbeafe; color: #2563eb; }
+  .kpi-icon-indigo { background: #e0e7ff; color: #4f46e5; }
+  .kpi-icon-purple { background: #f3e8ff; color: #7c3aed; }
+
+  .kpi-details {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .kpi-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .kpi-val {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: var(--color-text);
+    line-height: 1.2;
+    margin: 0.15rem 0;
+  }
+
+  .kpi-sub {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+  }
+
+  /* Banner */
+  .quick-access-banner {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    color: white;
+    padding: 1.5rem 1.75rem;
+    border-radius: var(--radius-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-2xl);
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .banner-text h3 {
+    margin: 0 0 0.35rem 0;
+    font-size: 1.25rem;
+    color: white;
+  }
+
+  .banner-text p {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+
+  .banner-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .banner-actions .btn-outline {
+    border-color: #475569;
+    color: white;
+    background: transparent;
+  }
+
+  .banner-actions .btn-outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Section Title */
+  .section-title-row {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .section-title-row h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.45rem;
+  }
+
+  /* Filters */
+  .filter-bar-card {
+    padding: 1rem 1.25rem;
+    margin-bottom: var(--spacing-lg);
+    background: var(--color-surface);
+  }
+
+  .filter-controls {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    position: relative;
+    flex: 1;
+    min-width: 260px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  .search-input {
+    padding-left: 2.5rem;
+  }
+
+  /* Table */
+  .table-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.92rem;
+  }
+
+  .admin-table th {
+    background: #f8fafc;
+    padding: 0.9rem 1rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .admin-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+  }
+
+  .admin-table tr:hover td {
+    background-color: #f1f5f9;
+  }
+
+  .order-folio-link {
+    font-family: monospace;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .status-select {
+    padding: 0.35rem 0.65rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.82rem;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    cursor: pointer;
+  }
+
+  .status-PAGADO { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+  .status-PREPARANDO { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+  .status-ENVIADO { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+  .status-ENTREGADO { background: #e0e7ff; color: #3730a3; border-color: #a5b4fc; }
+  .status-PENDIENTE { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+  .status-CANCELADO { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+
+  .empty-state {
+    text-align: center;
+    padding: 3.5rem 1rem;
+    color: var(--color-text-muted);
+  }
+
+  .empty-state svg {
+    margin-bottom: 0.75rem;
+    color: #94a3b8;
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+
+  .modal-dialog {
+    background: var(--color-surface);
+    width: 100%;
+    max-width: 650px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+  }
+
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .modal-close {
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+    padding: 0.25rem;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+    max-height: calc(85vh - 120px);
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-end;
+    background: #f8fafc;
+  }
+
+  .order-detail-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.88rem;
+  }
+
+  .order-detail-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .detail-item-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-background);
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+  }
+</style>
+
+<script>
+  import { authService } from '../../services/auth.js';
+  import { apiClient } from '../../services/apiClient.js';
+
+  // 1. Elementos
+  const authGuard = document.getElementById('admin-auth-guard') as HTMLElement;
+  const dashboardView = document.getElementById('admin-dashboard-view') as HTMLElement;
+  const adminUserTag = document.getElementById('admin-user-tag') as HTMLElement;
+
+  const kpiRevenue = document.getElementById('kpi-total-revenue') as HTMLElement;
+  const kpiOrders = document.getElementById('kpi-total-orders') as HTMLElement;
+  const kpiPending = document.getElementById('kpi-pending-orders') as HTMLElement;
+  const kpiProducts = document.getElementById('kpi-total-products') as HTMLElement;
+  const kpiInventoryUnits = document.getElementById('kpi-total-inventory-units') as HTMLElement;
+  const kpiAvgTicket = document.getElementById('kpi-avg-ticket') as HTMLElement;
+
+  const ordersTableBody = document.getElementById('orders-table-body') as HTMLElement;
+  const ordersEmptyMsg = document.getElementById('orders-empty-msg') as HTMLElement;
+  const filterSearch = document.getElementById('filter-order-search') as HTMLInputElement;
+  const filterStatus = document.getElementById('filter-order-status') as HTMLSelectElement;
+  const btnRefresh = document.getElementById('btn-refresh-dashboard') as HTMLElement;
+
+  // Modal Detalle
+  const orderModal = document.getElementById('order-detail-modal') as HTMLElement;
+  const modalOrderFolio = document.getElementById('modal-order-folio') as HTMLElement;
+  const modalOrderContent = document.getElementById('modal-order-content') as HTMLElement;
+  const modalOrderClose = document.getElementById('modal-order-close') as HTMLElement;
+  const btnCloseOrderModal = document.getElementById('btn-close-order-modal') as HTMLElement;
+
+  // Estado Local
+  let allOrders: any[] = [];
+  let allProducts: any[] = [];
+
+  // 2. Verificación de Seguridad y Rol ADMIN (Bloque B - Parte 3)
+  function checkAdminAccess() {
+    if (!authService.isAuthenticated()) {
+      if (authGuard) authGuard.style.display = 'block';
+      if (dashboardView) dashboardView.style.display = 'none';
+      return false;
     }
 
-    let usuario: {
-      id?: number;
-      nombre?: string;
-      email?: string;
-      rol?: string;
-    };
-
-    try {
-      usuario = JSON.parse(userRaw);
-    } catch {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
-
-      window.location.href = '/login?redirect=/admin';
-      return;
+    const user = authService.getUser();
+    if (!user || user.rol !== 'ADMIN') {
+      if (authGuard) authGuard.style.display = 'block';
+      if (dashboardView) dashboardView.style.display = 'none';
+      return false;
     }
 
-    // --------------------------------------------------
-    // 2. Verificación rápida del rol
-    // --------------------------------------------------
+    if (authGuard) authGuard.style.display = 'none';
+    if (dashboardView) dashboardView.style.display = 'block';
+    if (adminUserTag) adminUserTag.textContent = `Sesión: ${user.nombre} (${user.email})`;
+    return true;
+  }
 
-    if (usuario.rol !== 'ADMIN') {
-      mostrarError(
-        'Tu cuenta no tiene permisos de administrador.'
-      );
-      return;
-    }
-
-    if (adminNameElement) {
-      adminNameElement.textContent =
-        usuario.nombre || 'Administrador';
-    }
-
-    // --------------------------------------------------
-    // 3. Verificación REAL contra el backend
-    // --------------------------------------------------
-
+  // 3. Carga de Datos desde GraphQL
+  async function loadDashboardData() {
     const query = `
-      query ObtenerAdminKPIs {
-        adminKPIs {
-          ventasTotales
-          totalPedidos
-          totalClientes
-          totalProductos
-          pedidosPendientes
-          pedidosPreparando
-          pedidosEnviados
-          pedidosEntregados
+      query GetAdminDashboard {
+        pedidos {
+          id
+          folio
+          fecha
+          subtotal
+          envio
+          total
+          status
+          metodoPago
+          direccionEnvio
+          nombreCliente
+          emailCliente
+          detalles {
+            id
+            cantidad
+            precioUnitario
+            subtotal
+            producto {
+              id
+              titulo
+              autor
+              imagen
+            }
+          }
+        }
+        productos {
+          id
+          titulo
+          stock
+          precio
         }
       }
     `;
 
     try {
+      const res = await apiClient.query(query);
+      allOrders = res?.pedidos || [];
+      allProducts = res?.productos || [];
 
-      const response = await fetch(API_URL, {
-        method: 'POST',
-
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
-
-        body: JSON.stringify({
-          query
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `Error HTTP ${response.status}: ${response.statusText}`
-        );
+      calculateKPIs();
+      renderOrdersTable();
+    } catch (err: any) {
+      console.error('[Admin Dashboard] Error:', err);
+      if (ordersTableBody) {
+        ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#dc2626;">Error al cargar pedidos: ${err.message}</td></tr>`;
       }
-
-      const result = await response.json();
-
-      // ------------------------------------------------
-      // Error GraphQL
-      // ------------------------------------------------
-
-      if (result.errors) {
-
-        const mensaje: string =
-          result.errors[0]?.message ||
-          'No tienes permisos para acceder al panel.';
-
-        if (
-          mensaje.includes('No autorizado') ||
-          mensaje.includes('Acceso denegado')
-        ) {
-          mostrarError(mensaje);
-          return;
-        }
-
-        throw new Error(mensaje);
-      }
-
-      const kpis = result.data?.adminKPIs;
-
-      if (!kpis) {
-        throw new Error(
-          'No se recibieron los indicadores del servidor.'
-        );
-      }
-
-      // ------------------------------------------------
-      // 4. Mostrar KPIs
-      // ------------------------------------------------
-
-      const ventasElement =
-        document.getElementById('ventas-totales');
-
-      if (ventasElement) {
-        ventasElement.textContent =
-          Number(kpis.ventasTotales).toLocaleString(
-            'es-MX',
-            {
-              style: 'currency',
-              currency: 'MXN'
-            }
-          );
-      }
-
-      const pedidosElement =
-        document.getElementById('total-pedidos');
-
-      if (pedidosElement) {
-        pedidosElement.textContent =
-          String(kpis.totalPedidos);
-      }
-
-      const clientesElement =
-        document.getElementById('total-clientes');
-
-      if (clientesElement) {
-        clientesElement.textContent =
-          String(kpis.totalClientes);
-      }
-
-      const productosElement =
-        document.getElementById('total-productos');
-
-      if (productosElement) {
-        productosElement.textContent =
-          String(kpis.totalProductos);
-      }
-
-      const pendientesElement =
-        document.getElementById('pedidos-pendientes');
-
-      if (pendientesElement) {
-        pendientesElement.textContent =
-          String(kpis.pedidosPendientes);
-      }
-
-      const preparandoElement =
-        document.getElementById('pedidos-preparando');
-
-      if (preparandoElement) {
-        preparandoElement.textContent =
-          String(kpis.pedidosPreparando);
-      }
-
-      const enviadosElement =
-        document.getElementById('pedidos-enviados');
-
-      if (enviadosElement) {
-        enviadosElement.textContent =
-          String(kpis.pedidosEnviados);
-      }
-
-      const entregadosElement =
-        document.getElementById('pedidos-entregados');
-
-      if (entregadosElement) {
-        entregadosElement.textContent =
-          String(kpis.pedidosEntregados);
-      }
-
-      // ------------------------------------------------
-      // 5. Mostrar panel
-      // ------------------------------------------------
-
-      if (loadingElement) {
-        loadingElement.style.display = 'none';
-      }
-
-      if (contentElement) {
-        contentElement.style.display = 'block';
-      }
-
-    } catch (error: unknown) {
-
-      console.error(
-        'Error cargando panel ADMIN:',
-        error
-      );
-
-      const mensaje =
-        error instanceof Error
-          ? error.message
-          : 'No fue posible cargar el panel administrativo.';
-
-      mostrarError(mensaje);
     }
   }
 
-  cargarPanelAdmin();
+  // 4. Cálculo de KPIs
+  function calculateKPIs() {
+    const totalRev = allOrders
+      .filter(o => o.status !== 'CANCELADO')
+      .reduce((acc, o) => acc + (Number(o.total) || 0), 0);
+
+    const totalOrdersCount = allOrders.length;
+    const preparingCount = allOrders.filter(o => o.status === 'PREPARANDO' || o.status === 'PENDIENTE').length;
+    const totalProdCount = allProducts.length;
+    const totalUnitsCount = allProducts.reduce((acc, p) => acc + (Number(p.stock) || 0), 0);
+    const avgTicket = totalOrdersCount > 0 ? totalRev / totalOrdersCount : 0;
+
+    if (kpiRevenue) kpiRevenue.textContent = `$${totalRev.toFixed(2)} MXN`;
+    if (kpiOrders) kpiOrders.textContent = totalOrdersCount.toString();
+    if (kpiPending) kpiPending.textContent = `${preparingCount} en preparación`;
+    if (kpiProducts) kpiProducts.textContent = totalProdCount.toString();
+    if (kpiInventoryUnits) kpiInventoryUnits.textContent = `${totalUnitsCount.toLocaleString()} unidades en stock`;
+    if (kpiAvgTicket) kpiAvgTicket.textContent = `$${avgTicket.toFixed(2)} MXN`;
+  }
+
+  // 5. Renderizado de Órdenes
+  function renderOrdersTable() {
+    if (!ordersTableBody) return;
+
+    const search = (filterSearch?.value || '').toLowerCase().trim();
+    const status = filterStatus?.value || '';
+
+    const filtered = allOrders.filter(o => {
+      if (search) {
+        const folioMatch = (o.folio || '').toLowerCase().includes(search);
+        const nameMatch = (o.nombreCliente || '').toLowerCase().includes(search);
+        const emailMatch = (o.emailCliente || '').toLowerCase().includes(search);
+        if (!folioMatch && !nameMatch && !emailMatch) return false;
+      }
+      if (status && o.status !== status) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      ordersTableBody.innerHTML = '';
+      if (ordersEmptyMsg) ordersEmptyMsg.style.display = 'block';
+      return;
+    }
+
+    if (ordersEmptyMsg) ordersEmptyMsg.style.display = 'none';
+
+    ordersTableBody.innerHTML = filtered.map(order => {
+      const dateStr = order.fecha ? new Date(order.fecha).toLocaleDateString('es-MX', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      }) : 'Reciente';
+
+      return `
+        <tr>
+          <td>
+            <a href="javascript:void(0)" class="order-folio-link btn-view-order" data-id="${order.id}">
+              ${order.folio}
+            </a>
+          </td>
+          <td style="font-size:0.85rem; color:var(--color-text-muted);">${dateStr}</td>
+          <td>
+            <strong style="display:block;">${order.nombreCliente}</strong>
+            <span style="font-size:0.8rem; color:var(--color-text-muted);">${order.emailCliente || ''}</span>
+          </td>
+          <td>
+            <span style="font-size:0.85rem; font-weight:600;">${(order.metodoPago || '').replace('_', ' ')}</span>
+          </td>
+          <td style="font-weight:700; color:var(--color-primary);">$${Number(order.total).toFixed(2)} MXN</td>
+          <td>
+            <select class="status-select status-${order.status} order-status-changer" data-id="${order.id}">
+              <option value="PAGADO" ${order.status === 'PAGADO' ? 'selected' : ''}>PAGADO</option>
+              <option value="PREPARANDO" ${order.status === 'PREPARANDO' ? 'selected' : ''}>PREPARANDO</option>
+              <option value="ENVIADO" ${order.status === 'ENVIADO' ? 'selected' : ''}>ENVIADO</option>
+              <option value="ENTREGADO" ${order.status === 'ENTREGADO' ? 'selected' : ''}>ENTREGADO</option>
+              <option value="PENDIENTE" ${order.status === 'PENDIENTE' ? 'selected' : ''}>PENDIENTE</option>
+              <option value="CANCELADO" ${order.status === 'CANCELADO' ? 'selected' : ''}>CANCELADO</option>
+            </select>
+          </td>
+          <td style="text-align: right;">
+            <button class="btn btn-outline btn-sm btn-view-order" data-id="${order.id}">
+              Ver Detalle
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    attachOrderEvents();
+  }
+
+  function attachOrderEvents() {
+    // Cambio de Estado en Vivo (Bloque B - Parte 3)
+    document.querySelectorAll('.order-status-changer').forEach(select => {
+      select.addEventListener('change', async (e: any) => {
+        const id = select.getAttribute('data-id');
+        const newStatus = e.target.value;
+
+        const mutation = `
+          mutation AdminUpdateOrderStatus($id: ID!, $status: StatusPedido!) {
+            actualizarEstadoPedido(id: $id, status: $status) {
+              id
+              status
+            }
+          }
+        `;
+
+        try {
+          const res = await apiClient.mutation(mutation, { id, status: newStatus });
+          if (res?.actualizarEstadoPedido) {
+            const ord = allOrders.find(o => String(o.id) === String(id));
+            if (ord) ord.status = newStatus;
+
+            // Actualizar clase CSS del selector
+            select.className = `status-select status-${newStatus} order-status-changer`;
+            calculateKPIs();
+            if ((window as any).showToast) {
+              (window as any).showToast(`Orden actualizada a: ${newStatus}`, 'success');
+            }
+          }
+        } catch (err: any) {
+          if ((window as any).showToast) {
+            (window as any).showToast(`Error al actualizar estado: ${err.message}`, 'error');
+          }
+        }
+      });
+    });
+
+    // Ver Detalle Modal
+    document.querySelectorAll('.btn-view-order').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const order = allOrders.find(o => String(o.id) === String(id));
+        if (order) openOrderDetail(order);
+      });
+    });
+  }
+
+  function openOrderDetail(order: any) {
+    if (modalOrderFolio) modalOrderFolio.textContent = `Orden: ${order.folio}`;
+    if (modalOrderContent) {
+      const itemsHtml = (order.detalles || []).map((det: any) => `
+        <div class="detail-item-row">
+          <div>
+            <strong>${det.producto?.titulo || 'Libro'}</strong>
+            <span style="display:block; color:var(--color-text-muted); font-size:0.8rem;">Cantidad: ${det.cantidad} un. × $${Number(det.precioUnitario).toFixed(2)}</span>
+          </div>
+          <span style="font-weight:700;">$${Number(det.subtotal).toFixed(2)} MXN</span>
+        </div>
+      `).join('');
+
+      modalOrderContent.innerHTML = `
+        <div class="order-detail-meta">
+          <div>
+            <span style="color:var(--color-text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:700;">Destinatario</span>
+            <div style="font-weight:600;">${order.nombreCliente}</div>
+            <div style="color:var(--color-text-muted); font-size:0.82rem;">${order.emailCliente}</div>
+          </div>
+          <div>
+            <span style="color:var(--color-text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:700;">Método de Pago</span>
+            <div style="font-weight:600;">${(order.metodoPago || '').replace('_', ' ')}</div>
+            <div style="color:var(--color-text-muted); font-size:0.82rem;">Estado actual: <strong>${order.status}</strong></div>
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <span style="color:var(--color-text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:700;">Dirección de Entrega</span>
+            <div>${order.direccionEnvio || 'Guadalajara, Jalisco'}</div>
+          </div>
+        </div>
+
+        <h4 style="margin: 0 0 0.5rem 0; font-size:0.95rem;">Artículos Incluidos:</h4>
+        <div class="order-detail-items">
+          ${itemsHtml || '<p style="color:var(--color-text-muted);">Sin detalles disponibles.</p>'}
+        </div>
+
+        <div style="margin-top:1.25rem; padding-top:0.75rem; border-top:1px solid var(--color-border); display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:700; font-size:1.05rem;">Total de la Orden:</span>
+          <span style="font-weight:800; font-size:1.35rem; color:var(--color-primary);">$${Number(order.total).toFixed(2)} MXN</span>
+        </div>
+      `;
+    }
+
+    if (orderModal) orderModal.style.display = 'flex';
+  }
+
+  function closeOrderModal() {
+    if (orderModal) orderModal.style.display = 'none';
+  }
+
+  if (modalOrderClose) modalOrderClose.addEventListener('click', closeOrderModal);
+  if (btnCloseOrderModal) btnCloseOrderModal.addEventListener('click', closeOrderModal);
+  if (btnRefresh) btnRefresh.addEventListener('click', loadDashboardData);
+  if (filterSearch) filterSearch.addEventListener('input', renderOrdersTable);
+  if (filterStatus) filterStatus.addEventListener('change', renderOrdersTable);
+
+  window.addEventListener('click', (e) => {
+    if (e.target === orderModal) closeOrderModal();
+  });
+
+  // Inicializar
+  if (checkAdminAccess()) {
+    loadDashboardData();
+  }
 </script>
-
-  <style>
-
-    .admin-page {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 40px 20px 70px;
-    }
-
-
-    .admin-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 30px;
-      margin-bottom: 30px;
-    }
-
-
-    .admin-label {
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      opacity: .65;
-    }
-
-
-    .admin-header h1 {
-      margin: 8px 0;
-      font-size: 38px;
-    }
-
-
-    .admin-header p {
-      margin: 0;
-      opacity: .7;
-    }
-
-
-    .orders-button,
-    .back-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px 20px;
-      border-radius: 10px;
-      text-decoration: none;
-      font-weight: 700;
-      background: #111827;
-      color: white;
-    }
-
-
-    .message-card {
-      padding: 30px;
-      border-radius: 16px;
-      background: #f3f4f6;
-      text-align: center;
-    }
-
-
-    .message-card.error {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-
-    .message-card.error .back-button {
-      margin-top: 15px;
-    }
-
-
-    .welcome-card {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 25px;
-      margin-bottom: 25px;
-      border-radius: 16px;
-      background: #111827;
-      color: white;
-    }
-
-
-    .welcome-card span {
-      opacity: .7;
-      font-size: 14px;
-    }
-
-
-    .welcome-card h2 {
-      margin: 5px 0 0;
-    }
-
-
-    .admin-badge {
-      padding: 8px 14px;
-      border-radius: 20px;
-      background: white;
-      color: #111827;
-      font-size: 12px;
-      font-weight: 800;
-    }
-
-
-    .kpi-grid {
-      display: grid;
-      grid-template-columns:
-        repeat(4, minmax(0, 1fr));
-      gap: 18px;
-      margin-bottom: 40px;
-    }
-
-
-    .kpi-card {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 22px;
-      border-radius: 16px;
-      background: white;
-      box-shadow:
-        0 4px 20px rgba(0, 0, 0, .07);
-    }
-
-
-    .kpi-icon {
-      width: 50px;
-      height: 50px;
-      display: grid;
-      place-items: center;
-      border-radius: 12px;
-      background: #f3f4f6;
-      font-size: 24px;
-    }
-
-
-    .kpi-card span {
-      display: block;
-      font-size: 13px;
-      opacity: .65;
-      margin-bottom: 5px;
-    }
-
-
-    .kpi-card strong {
-      font-size: 25px;
-    }
-
-
-    .section-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 18px;
-    }
-
-
-    .section-title h2 {
-      margin: 0;
-    }
-
-
-    .section-title span {
-      opacity: .6;
-      font-size: 14px;
-    }
-
-
-    .status-section {
-      margin-bottom: 40px;
-    }
-
-
-    .status-grid {
-      display: grid;
-      grid-template-columns:
-        repeat(4, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-
-    .status-card {
-      padding: 22px;
-      border-radius: 14px;
-      background: #f9fafb;
-    }
-
-
-    .status-card span {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 14px;
-    }
-
-
-    .status-card strong {
-      font-size: 30px;
-    }
-
-
-    .quick-grid {
-      display: grid;
-      grid-template-columns:
-        repeat(2, minmax(0, 1fr));
-      gap: 18px;
-    }
-
-
-    .quick-card {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      padding: 22px;
-      border-radius: 16px;
-      background: white;
-      color: inherit;
-      text-decoration: none;
-      box-shadow:
-        0 4px 20px rgba(0, 0, 0, .06);
-      transition: transform .2s;
-    }
-
-
-    .quick-card:hover {
-      transform: translateY(-2px);
-    }
-
-
-    .quick-icon {
-      font-size: 30px;
-    }
-
-
-    .quick-card strong {
-      display: block;
-      margin-bottom: 5px;
-    }
-
-
-    .quick-card p {
-      margin: 0;
-      opacity: .65;
-      font-size: 14px;
-    }
-
-
-    @media (max-width: 850px) {
-
-      .kpi-grid,
-      .status-grid {
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-      }
-
-      .admin-header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-    }
-
-
-    @media (max-width: 550px) {
-
-      .kpi-grid,
-      .status-grid,
-      .quick-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .admin-header h1 {
-        font-size: 30px;
-      }
-
-    }
-
-  </style>
-
-</BaseLayout>

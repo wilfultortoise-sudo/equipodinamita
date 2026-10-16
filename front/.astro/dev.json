@@ -1,14 +1,24 @@
 {
-	"pid": 6312,
+	"pid": 18148,
 	"port": 4321,
 	"url": "http://localhost:4321",
 	"urls": {
 		"local": [
 			"http://localhost:4321/"
 		],
-		"network": [],
-		"networkInterfaceNames": []
+		"network": [
+			"http://192.168.56.1:4321/",
+			"http://192.168.136.1:4321/",
+			"http://192.168.219.1:4321/",
+			"http://172.16.121.94:4321/"
+		],
+		"networkInterfaceNames": [
+			"Ethernet 2",
+			"VMware Network Adapter VMnet1",
+			"VMware Network Adapter VMnet8",
+			"Wi-Fi"
+		]
 	},
 	"background": false,
-	"startedAt": "2026-10-09T03:38:12.279Z"
+	"startedAt": "2026-10-16T15:44:08.198Z"
 }

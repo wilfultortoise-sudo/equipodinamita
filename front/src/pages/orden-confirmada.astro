@@ -1,79 +1,154 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-const pageTitle = "¡Orden Confirmada! — BiblioTech Store";
+const pageTitle = "Comprobante Digital Oficial — BiblioTech Store";
 ---
 
 <BaseLayout pageTitle={pageTitle}>
   <div class="confirmed-page">
     <div class="container confirmed-container">
-      <div class="card confirmed-card">
+      
+      <!-- Mensaje de Éxito Superior (oculto en impresión) -->
+      <div class="success-banner no-print">
         <div class="success-icon-badge">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
         </div>
-        <h1>¡Gracias por tu compra!</h1>
-        <p class="confirmed-subtitle">Tu orden ha sido procesada y registrada en nuestro sistema con éxito.</p>
-
-        <div class="folio-box">
-          <span class="folio-label">Folio Oficial de Pedido:</span>
-          <span id="order-folio-display" class="folio-code">CARGANDO...</span>
-          <div id="payment-method-display" style="display: none; margin-top: 0.65rem; padding-top: 0.5rem; border-top: 1px dashed #cbd5e1; font-size: 0.88rem; color: #1e3a8a; font-weight: 600;"></div>
-        </div>
-
-        <div class="info-steps-card">
-          <div class="step-item">
-            <span class="step-num" style="display:inline-flex; width:28px; height:28px; border-radius:50%; background:#dbeafe; color:var(--color-primary); font-weight:700; align-items:center; justify-content:center; font-size:0.85rem;">1</span>
-            <div>
-              <strong>Confirmación por Correo</strong>
-              <p>Te enviamos el resumen detallado y comprobante de pago a tu correo registrado.</p>
-            </div>
-          </div>
-          <div class="step-item">
-            <span class="step-num" style="display:inline-flex; width:28px; height:28px; border-radius:50%; background:#dbeafe; color:var(--color-primary); font-weight:700; align-items:center; justify-content:center; font-size:0.85rem;">2</span>
-            <div>
-              <strong>Preparación de Inventario</strong>
-              <p>Nuestro equipo en almacén ya está empacando tus libros para el despacho.</p>
-            </div>
-          </div>
-          <div class="step-item">
-            <span class="step-num" style="display:inline-flex; width:28px; height:28px; border-radius:50%; background:#dbeafe; color:var(--color-primary); font-weight:700; align-items:center; justify-content:center; font-size:0.85rem;">3</span>
-            <div>
-              <strong>Seguimiento en Vivo</strong>
-              <p>Puedes consultar el estado de tu pedido en cualquier momento en tu sección de órdenes.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="confirmed-actions">
-          <a href="/ordenes" class="btn btn-primary">Ver Mis Órdenes</a>
+        <h1>¡Pago Aprobado y Orden Confirmada!</h1>
+        <p class="confirmed-subtitle">Tu transacción ha sido validada y registrada formalmente en nuestro sistema.</p>
+        
+        <div class="action-bar-top">
+          <button id="btn-print-receipt" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            Imprimir / Guardar Comprobante (PDF)
+          </button>
+          <a href="/ordenes" class="btn btn-outline">Ver Mis Órdenes</a>
           <a href="/catalogo" class="btn btn-outline">Seguir Comprando</a>
         </div>
       </div>
+
+      <!-- COMPROBANTE DIGITAL OFICIAL / FACTURA RECIBO (Bloque A - Parte 2) -->
+      <div class="card digital-receipt-card" id="printable-receipt">
+        
+        <!-- Encabezado Oficial -->
+        <div class="receipt-header">
+          <div class="company-brand">
+            <div class="brand-title">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+              <span>BiblioTech <strong style="color:var(--color-primary);">Store</strong></span>
+            </div>
+            <p class="company-meta">BiblioTech México S.A. de C.V.<br />RFC: BTM260930ABC | Guadalajara, Jal.<br />Atención: soporte@bibliotech.com</p>
+          </div>
+          <div class="receipt-title-box">
+            <span class="receipt-tag">COMPROBANTE DIGITAL DE COMPRA</span>
+            <div class="receipt-folio" id="rcpt-folio">FOL-2026-NUEVO</div>
+            <span class="receipt-date" id="rcpt-date">Cargando fecha...</span>
+            <span class="badge badge-success" id="rcpt-status">PAGADO</span>
+          </div>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <!-- Datos del Cliente y Envío -->
+        <div class="receipt-customer-grid">
+          <div class="customer-col">
+            <span class="col-title">DATOS DEL COMPRADOR</span>
+            <strong id="rcpt-customer-name" class="highlight-text">Cliente BiblioTech</strong>
+            <span id="rcpt-customer-email" class="sub-text">cliente@ejemplo.com</span>
+            <span id="rcpt-payment-method" class="sub-text" style="margin-top:0.25rem; font-weight:600; color:var(--color-primary);">Método: TARJETA_CREDITO</span>
+          </div>
+          <div class="customer-col">
+            <span class="col-title">DIRECCIÓN DE ENTREGA</span>
+            <span id="rcpt-delivery-address" class="highlight-text">Av. del Parque 1234, Guadalajara, Jal.</span>
+            <span class="sub-text" style="color:#059669; font-weight:600;">✓ Envío Seguro con Cobertura y Rastreo</span>
+          </div>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <!-- Tabla de Artículos Comprados -->
+        <div class="receipt-table-box">
+          <table class="receipt-table">
+            <thead>
+              <tr>
+                <th>Descripción del Libro</th>
+                <th style="text-align:center;">Cant.</th>
+                <th style="text-align:right;">P. Unitario</th>
+                <th style="text-align:right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="rcpt-items-body">
+              <tr>
+                <td colspan="4" style="text-align:center; padding:1.5rem; color:var(--color-text-muted);">
+                  Cargando desglose de la orden...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Resumen Financiero y Código de Validación -->
+        <div class="receipt-footer-grid">
+          <div class="qr-validation-col">
+            <div class="qr-box">
+              <svg width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><line x1="7" y1="7" x2="7.01" y2="7"></line><line x1="17" y1="7" x2="17.01" y2="7"></line><line x1="17" y1="17" x2="17.01" y2="17"></line><line x1="7" y1="17" x2="7.01" y2="17"></line></svg>
+            </div>
+            <div class="validation-text">
+              <span class="val-title">SELLO DIGITAL DE SEGURIDAD</span>
+              <span class="val-code" id="rcpt-sec-code">SEC-99A8-2026-VALID</span>
+              <p>Este comprobante es válido como recibo formal de compra y garantía de entrega en BiblioTech Store.</p>
+            </div>
+          </div>
+
+          <div class="totals-col">
+            <div class="total-line">
+              <span>Subtotal:</span>
+              <strong id="rcpt-subtotal">$0.00 MXN</strong>
+            </div>
+            <div class="total-line" id="rcpt-discount-row" style="display: none; color:#059669;">
+              <span>Descuento aplicado:</span>
+              <strong id="rcpt-discount">-$0.00 MXN</strong>
+            </div>
+            <div class="total-line">
+              <span>Costo de Envío:</span>
+              <strong id="rcpt-shipping">$0.00 MXN</strong>
+            </div>
+            <div class="receipt-divider" style="margin: 0.5rem 0;"></div>
+            <div class="total-line total-grand">
+              <span>TOTAL PAGADO:</span>
+              <strong id="rcpt-total" class="text-primary">$0.00 MXN</strong>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
     </div>
   </div>
 </BaseLayout>
 
 <style>
   .confirmed-page {
-    padding: var(--spacing-2xl) 0;
-    min-height: calc(80vh - 4rem);
-    display: flex;
-    align-items: center;
+    padding: var(--spacing-xl) 0 var(--spacing-2xl);
   }
 
   .confirmed-container {
-    max-width: 580px;
+    max-width: 780px;
   }
 
-  .confirmed-card {
+  .success-banner {
     text-align: center;
-    padding: var(--spacing-2xl) var(--spacing-xl);
-    background: var(--color-surface);
-    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-xl);
   }
 
   .success-icon-badge {
-    font-size: 4rem;
-    margin-bottom: 0.5rem;
+    color: #059669;
+    background: #d1fae5;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
     animation: bounce 0.6s ease;
   }
 
@@ -83,8 +158,8 @@ const pageTitle = "¡Orden Confirmada! — BiblioTech Store";
     100% { transform: scale(1); opacity: 1; }
   }
 
-  .confirmed-card h1 {
-    margin: 0 0 0.5rem 0;
+  .success-banner h1 {
+    margin: 0 0 0.35rem 0;
     font-size: 1.85rem;
     color: var(--color-text);
   }
@@ -92,105 +167,387 @@ const pageTitle = "¡Orden Confirmada! — BiblioTech Store";
   .confirmed-subtitle {
     color: var(--color-text-muted);
     font-size: 0.95rem;
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: 1.25rem;
   }
 
-  .folio-box {
-    background: #eff6ff;
-    border: 1.5px dashed var(--color-primary);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-md);
-    margin-bottom: var(--spacing-xl);
+  .action-bar-top {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
   }
 
-  .folio-label {
-    display: block;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    margin-bottom: 0.25rem;
+  /* Tarjeta de Recibo Digital */
+  .digital-receipt-card {
+    background: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 2.25rem 2.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+    color: #1e293b;
   }
 
-  .folio-code {
-    font-family: monospace;
-    font-size: 1.4rem;
+  .receipt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+
+  .brand-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.35rem;
     font-weight: 800;
-    color: var(--color-primary);
+    color: var(--color-text);
+  }
+
+  .company-meta {
+    margin: 0.35rem 0 0 0;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    line-height: 1.35;
+  }
+
+  .receipt-title-box {
+    text-align: right;
+  }
+
+  .receipt-tag {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
     letter-spacing: 0.05em;
   }
 
-  .info-steps-card {
-    text-align: left;
-    background: var(--color-background);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-xl);
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
+  .receipt-folio {
+    font-family: monospace;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    margin: 0.15rem 0;
   }
 
-  .step-item {
-    display: flex;
-    gap: 0.75rem;
-    align-items: flex-start;
-  }
-
-  .step-icon {
-    font-size: 1.4rem;
-    line-height: 1;
-  }
-
-  .step-item strong {
-    font-size: 0.92rem;
+  .receipt-date {
     display: block;
-    margin-bottom: 0.15rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.35rem;
   }
 
-  .step-item p {
-    margin: 0;
+  .receipt-divider {
+    height: 1px;
+    background: var(--color-border);
+    margin: 1.25rem 0;
+  }
+
+  .receipt-customer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .col-title {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  .highlight-text {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .sub-text {
+    display: block;
     font-size: 0.82rem;
     color: var(--color-text-muted);
-    line-height: 1.4;
   }
 
-  .confirmed-actions {
+  /* Tabla de Items */
+  .receipt-table-box {
+    margin: 1.5rem 0;
+    overflow-x: auto;
+  }
+
+  .receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  .receipt-table th {
+    background: #f8fafc;
+    padding: 0.65rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    border-bottom: 1.5px solid var(--color-border);
+  }
+
+  .receipt-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+  }
+
+  /* Footer del Recibo */
+  .receipt-footer-grid {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 1.5rem;
+    align-items: center;
+    margin-top: 1rem;
+  }
+
+  .qr-validation-col {
     display: flex;
-    gap: var(--spacing-md);
-    justify-content: center;
+    align-items: center;
+    gap: 1rem;
   }
 
-  @media (max-width: 500px) {
-    .confirmed-actions {
+  .qr-box {
+    background: #f8fafc;
+    border: 1px solid var(--color-border);
+    padding: 0.4rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    flex-shrink: 0;
+  }
+
+  .val-title {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+  }
+
+  .val-code {
+    font-family: monospace;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .validation-text p {
+    margin: 0.2rem 0 0 0;
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    line-height: 1.3;
+  }
+
+  .totals-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.88rem;
+  }
+
+  .total-line {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .total-grand {
+    font-size: 1.15rem;
+    font-weight: 800;
+  }
+
+  .text-primary {
+    color: var(--color-primary);
+  }
+
+  /* Estilos para Impresión Formal en PDF (Bloque A - Parte 2) */
+  @media print {
+    body {
+      background: white !important;
+      color: black !important;
+    }
+
+    header, footer, .no-print, #toast-container {
+      display: none !important;
+    }
+
+    .confirmed-page {
+      padding: 0 !important;
+    }
+
+    .confirmed-container {
+      max-width: 100% !important;
+    }
+
+    .digital-receipt-card {
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+    }
+  }
+
+  @media (max-width: 650px) {
+    .receipt-header {
       flex-direction: column;
+    }
+    .receipt-title-box {
+      text-align: left;
+    }
+    .receipt-customer-grid {
+      grid-template-columns: 1fr;
+    }
+    .receipt-footer-grid {
+      grid-template-columns: 1fr;
     }
   }
 </style>
 
 <script>
+  import { apiClient } from '../services/apiClient.js';
+
   const params = new URLSearchParams(window.location.search);
-  const folio = params.get('folio') || 'PED-2026-NUEVO';
-  const metodo = params.get('metodo');
-  const ref = params.get('ref');
+  const folio = params.get('folio') || '';
 
-  const display = document.getElementById('order-folio-display');
-  if (display) {
-    display.textContent = folio;
+  const rcptFolio = document.getElementById('rcpt-folio');
+  const rcptDate = document.getElementById('rcpt-date');
+  const rcptStatus = document.getElementById('rcpt-status');
+  const rcptCustomerName = document.getElementById('rcpt-customer-name');
+  const rcptCustomerEmail = document.getElementById('rcpt-customer-email');
+  const rcptPaymentMethod = document.getElementById('rcpt-payment-method');
+  const rcptDeliveryAddress = document.getElementById('rcpt-delivery-address');
+  const rcptItemsBody = document.getElementById('rcpt-items-body');
+  const rcptSubtotal = document.getElementById('rcpt-subtotal');
+  const rcptDiscountRow = document.getElementById('rcpt-discount-row');
+  const rcptDiscount = document.getElementById('rcpt-discount');
+  const rcptShipping = document.getElementById('rcpt-shipping');
+  const rcptTotal = document.getElementById('rcpt-total');
+  const rcptSecCode = document.getElementById('rcpt-sec-code');
+  const btnPrint = document.getElementById('btn-print-receipt');
+
+  // Botón Imprimir / PDF
+  if (btnPrint) {
+    btnPrint.addEventListener('click', () => {
+      window.print();
+    });
   }
 
-  const payDisplay = document.getElementById('payment-method-display');
-  if (payDisplay && metodo) {
-    payDisplay.style.display = 'block';
-    const methodNames: Record<string, string> = {
-      'TARJETA_CREDITO': '💳 Tarjeta de Crédito',
-      'TARJETA_DEBITO': '💳 Tarjeta de Débito',
-      'OXXO_EFECTIVO': '🏪 OXXO Pay (En Efectivo)',
-      'MERCADO_PAGO': '⚡ Mercado Pago',
-      'PAYPAL': '🅿️ PayPal',
-      'TRANSFERENCIA_SPEI': '🏦 Transferencia SPEI'
-    };
-    const friendlyName = methodNames[metodo] || metodo.replace(/_/g, ' ');
-    payDisplay.innerHTML = `<span>Método: <strong>${friendlyName}</strong></span> ${ref ? `<span style="display:block; margin-top:2px; font-size:0.8rem; color:#64748b;">Ref: ${ref}</span>` : ''}`;
+  async function loadReceipt() {
+    if (rcptFolio) rcptFolio.textContent = folio || 'FOL-CONFIRMADO';
+    if (rcptDate) rcptDate.textContent = new Date().toLocaleString('es-MX', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    });
+
+    // 1. Intentar cargar desde sessionStorage del checkout reciente
+    const cachedRaw = sessionStorage.getItem('last_order_details');
+    if (cachedRaw) {
+      try {
+        const cached = JSON.parse(cachedRaw);
+        if (cached.folio === folio) {
+          renderReceiptData(cached);
+          return;
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    // 2. Si no, consultar pedidos vía GraphQL
+    const query = `
+      query GetPedidoPorFolio {
+        pedidos {
+          id
+          folio
+          fecha
+          subtotal
+          envio
+          total
+          status
+          metodoPago
+          direccionEnvio
+          nombreCliente
+          emailCliente
+          detalles {
+            id
+            cantidad
+            precioUnitario
+            subtotal
+            producto {
+              id
+              titulo
+              autor
+            }
+          }
+        }
+      }
+    `;
+
+    try {
+      const res = await apiClient.query(query);
+      const orders = res?.pedidos || [];
+      const matched = orders.find((o: any) => o.folio === folio) || orders[0];
+
+      if (matched) {
+        renderReceiptData(matched);
+      }
+    } catch (err: any) {
+      console.error('Error cargando recibo:', err);
+    }
   }
+
+  function renderReceiptData(order: any) {
+    if (rcptFolio) rcptFolio.textContent = order.folio || folio;
+    if (rcptDate && order.fecha) {
+      rcptDate.textContent = new Date(order.fecha).toLocaleString('es-MX', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      });
+    }
+    if (rcptStatus) rcptStatus.textContent = order.status || 'PAGADO';
+    if (rcptCustomerName) rcptCustomerName.textContent = order.nombreCliente || 'Cliente';
+    if (rcptCustomerEmail) rcptCustomerEmail.textContent = order.emailCliente || '';
+    if (rcptPaymentMethod) rcptPaymentMethod.textContent = `Método de Pago: ${(order.metodoPago || 'TARJETA').replace('_', ' ')}`;
+    if (rcptDeliveryAddress) rcptDeliveryAddress.textContent = order.direccionEnvio || 'Guadalajara, Jalisco';
+
+    if (rcptSecCode) rcptSecCode.textContent = `SEC-${(order.folio || 'FOL').slice(-6)}-${Date.now().toString(36).toUpperCase()}`;
+
+    // Renderizar artículos
+    const items = order.detalles || [];
+    if (rcptItemsBody) {
+      if (items.length === 0) {
+        rcptItemsBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Artículos procesados en bodega.</td></tr>';
+      } else {
+        rcptItemsBody.innerHTML = items.map((item: any) => {
+          const title = item.titulo || item.producto?.titulo || 'Libro del Catálogo';
+          const author = item.autor || item.producto?.autor || '';
+          const qty = item.cantidad || 1;
+          const unitPrice = item.precioUnitario || item.precio || 0;
+          const lineSubtotal = item.subtotal || (Number(unitPrice) * Number(qty));
+
+          return `
+            <tr>
+              <td>
+                <strong style="display:block;">${title}</strong>
+                ${author ? `<span style="font-size:0.75rem; color:var(--color-text-muted);">${author}</span>` : ''}
+              </td>
+              <td style="text-align:center; font-weight:700;">${qty}</td>
+              <td style="text-align:right;">$${Number(unitPrice).toFixed(2)}</td>
+              <td style="text-align:right; font-weight:700;">$${Number(lineSubtotal).toFixed(2)}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    if (rcptSubtotal) rcptSubtotal.textContent = `$${Number(order.subtotal || order.total || 0).toFixed(2)} MXN`;
+    if (rcptShipping) rcptShipping.textContent = Number(order.envio) === 0 ? 'GRATIS' : `$${Number(order.envio).toFixed(2)} MXN`;
+    if (rcptTotal) rcptTotal.textContent = `$${Number(order.total || 0).toFixed(2)} MXN`;
+  }
+
+  loadReceipt();
 </script>

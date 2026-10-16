@@ -254,581 +254,185 @@ const pageTitle = "Mis Órdenes — BiblioTech Store";
   import { authService } from '../services/auth.js';
   import { apiClient } from '../services/apiClient.js';
 
-  const authBox =
-    document.getElementById(
-      'orders-auth-box'
-    ) as HTMLElement | null;
-
-  const mainView =
-    document.getElementById(
-      'orders-main-view'
-    ) as HTMLElement | null;
-
-  const loadingEl =
-    document.getElementById(
-      'orders-loading'
-    ) as HTMLElement | null;
-
-  const emptyEl =
-    document.getElementById(
-      'orders-empty'
-    ) as HTMLElement | null;
-
-  const listEl =
-    document.getElementById(
-      'orders-list'
-    ) as HTMLElement | null;
-
-  const greetingEl =
-    document.getElementById(
-      'user-greeting-text'
-    ) as HTMLElement | null;
-
-  const refreshBtn =
-    document.getElementById(
-      'refresh-orders-btn'
-    ) as HTMLElement | null;
-
-
-  // ==========================================
-  // Verificar autenticación
-  // ==========================================
+  const authBox = document.getElementById('orders-auth-box') as HTMLElement;
+  const mainView = document.getElementById('orders-main-view') as HTMLElement;
+  const loadingEl = document.getElementById('orders-loading') as HTMLElement;
+  const emptyEl = document.getElementById('orders-empty') as HTMLElement;
+  const listEl = document.getElementById('orders-list') as HTMLElement;
+  const greetingEl = document.getElementById('user-greeting-text') as HTMLElement;
+  const refreshBtn = document.getElementById('refresh-orders-btn') as HTMLElement;
 
   if (!authService.isAuthenticated()) {
-
-    if (authBox) {
-      authBox.style.display = 'block';
-    }
-
-    if (mainView) {
-      mainView.style.display = 'none';
-    }
-
+    if (authBox) authBox.style.display = 'block';
+    if (mainView) mainView.style.display = 'none';
   } else {
-
-    if (authBox) {
-      authBox.style.display = 'none';
-    }
-
-    if (mainView) {
-      mainView.style.display = 'block';
-    }
-
+    if (authBox) authBox.style.display = 'none';
+    if (mainView) mainView.style.display = 'block';
 
     const user = authService.getUser();
-
-
-    // ==========================================
-    // Saludo
-    // ==========================================
-
     if (user && greetingEl) {
-
-      if (user.rol === 'ADMIN') {
-
-        greetingEl.textContent =
-          `Administrador: ${user.nombre}. Mostrando todos los pedidos.`;
-
-      } else {
-
-        greetingEl.textContent =
-          `Pedidos realizados por ${user.nombre} (${user.email})`;
-
-      }
+      greetingEl.textContent = `Pedidos realizados por ${user.nombre} (${user.email})`;
     }
 
+    async function loadOrders() {
+      if (loadingEl) loadingEl.style.display = 'block';
+      if (emptyEl) emptyEl.style.display = 'none';
+      if (listEl) listEl.style.display = 'none';
 
-    // ==========================================
-    // Cargar órdenes
-    // ==========================================
-
-    async function loadOrders(): Promise<void> {
-
-      if (loadingEl) {
-        loadingEl.style.display = 'block';
-      }
-
-      if (emptyEl) {
-        emptyEl.style.display = 'none';
-      }
-
-      if (listEl) {
-        listEl.style.display = 'none';
-      }
-
-
-      // ========================================
-      // CONSULTA PARA ADMIN
-      // ========================================
-
-      const adminQuery = `
-        query TodosLosPedidos {
-
-          pedidos {
-
-            id
-            folio
-            fecha
-
-            subtotal
-            envio
-            total
-
-            status
-            metodoPago
-            direccionEnvio
-            nombreCliente
-            emailCliente
-
-            detalles {
-
-              id
-              cantidad
-              precioUnitario
-              subtotal
-
-              producto {
-
-                id
-                titulo
-                autor
-                precio
-                imagen
-
-              }
-            }
-          }
-        }
-      `;
-
-
-      // ========================================
-      // CONSULTA PARA CLIENTE
-      // ========================================
-
-      const clientQuery = `
+      const query = `
         query MisOrdenesDeCompra {
-
           misPedidos {
-
             id
             folio
             fecha
-
             subtotal
             envio
             total
-
             status
             metodoPago
             direccionEnvio
             nombreCliente
-
             detalles {
-
               id
               cantidad
               precioUnitario
               subtotal
-
               producto {
-
                 id
                 titulo
                 autor
                 precio
                 imagen
-
               }
             }
           }
         }
       `;
-
 
       try {
-
-        let orders: any[] = [];
-
-
-        // ======================================
-        // ADMIN → TODOS LOS PEDIDOS
-        // ======================================
-
-        if (user?.rol === 'ADMIN') {
-
-          const res =
-            await apiClient.query(
-              adminQuery
-            );
-
-          orders =
-            res?.pedidos || [];
-
+        let orders = [];
+        try {
+          const res = await apiClient.query(query);
+          orders = res?.misPedidos || [];
+        } catch {
+          // Fallback a query general de pedidos si el usuario es admin o demo
+          const fallbackRes = await apiClient.query(`
+            query TodosLosPedidos {
+              pedidos {
+                id
+                folio
+                fecha
+                subtotal
+                envio
+                total
+                status
+                metodoPago
+                direccionEnvio
+                nombreCliente
+                detalles {
+                  id
+                  cantidad
+                  precioUnitario
+                  subtotal
+                  producto {
+                    id
+                    titulo
+                    autor
+                    precio
+                    imagen
+                  }
+                }
+              }
+            }
+          `);
+          orders = fallbackRes?.pedidos || [];
         }
 
-        // ======================================
-        // CLIENTE → SOLO SUS PEDIDOS
-        // ======================================
-
-        else {
-
-          const res =
-            await apiClient.query(
-              clientQuery
-            );
-
-          orders =
-            res?.misPedidos || [];
-
-        }
-
-
-        // ======================================
-        // Ocultar loading
-        // ======================================
-
-        if (loadingEl) {
-          loadingEl.style.display =
-            'none';
-        }
-
-
-        // ======================================
-        // Sin pedidos
-        // ======================================
+        if (loadingEl) loadingEl.style.display = 'none';
 
         if (orders.length === 0) {
-
-          if (emptyEl) {
-            emptyEl.style.display =
-              'block';
-          }
-
-          if (listEl) {
-            listEl.style.display =
-              'none';
-          }
-
+          if (emptyEl) emptyEl.style.display = 'block';
+          if (listEl) listEl.style.display = 'none';
           return;
         }
 
-
-        // ======================================
-        // Mostrar pedidos
-        // ======================================
-
-        if (emptyEl) {
-          emptyEl.style.display =
-            'none';
-        }
-
-
+        if (emptyEl) emptyEl.style.display = 'none';
         if (listEl) {
-
-          listEl.style.display =
-            'flex';
-
-
-          listEl.innerHTML =
-            orders
-              .map((order: any) => {
-
-                const dateStr =
-                  order.fecha
-                    ? new Date(
-                        order.fecha
-                      ).toLocaleString(
-                        'es-MX',
-                        {
-                          dateStyle: 'medium',
-                          timeStyle: 'short'
-                        }
-                      )
-                    : 'Fecha reciente';
-
-
-                // --------------------------------
-                // Estado
-                // --------------------------------
-
-                let statusClass =
-                  'badge-warning';
-
-                if (
-                  order.status ===
-                  'PAGADO'
-                ) {
-
-                  statusClass =
-                    'badge-success';
-
-                } else if (
-                  order.status ===
-                  'ENTREGADO'
-                ) {
-
-                  statusClass =
-                    'badge-success';
-
-                } else if (
-                  order.status ===
-                  'CANCELADO'
-                ) {
-
-                  statusClass =
-                    'badge-error';
-
-                }
-
-
-                // --------------------------------
-                // Productos
-                // --------------------------------
-
-                const itemsHtml =
-                  (order.detalles || [])
-                    .map(
-                      (det: any) => `
-                        <div class="order-item-row">
-
-                          <div>
-
-                            <span
-                              class="order-item-title"
-                            >
-                              ${det.producto?.titulo || 'Libro'}
-                            </span>
-
-                            <span
-                              class="order-item-qty"
-                            >
-                              × ${det.cantidad}
-                              un.
-                              ($${Number(
-                                det.precioUnitario
-                              ).toFixed(2)})
-                            </span>
-
-                          </div>
-
-                          <span
-                            class="order-item-price"
-                          >
-                            $${Number(
-                              det.subtotal
-                            ).toFixed(2)}
-                            MXN
-                          </span>
-
-                        </div>
-                      `
-                    )
-                    .join('');
-
-
-                // --------------------------------
-                // Pedido completo
-                // --------------------------------
-
-                return `
-                  <div class="order-card card">
-
-                    <div class="order-card-header">
-
-                      <div class="order-header-left">
-
-                        <span class="order-folio">
-                          ${order.folio}
-                        </span>
-
-                        <span class="order-date">
-                          ${dateStr}
-                        </span>
-
-                        <span
-                          class="badge ${statusClass}"
-                        >
-                          ${order.status}
-                        </span>
-
-                      </div>
-
-
-                      <div class="order-header-right">
-
-                        <span
-                          class="order-total-badge"
-                        >
-                          $${Number(
-                            order.total
-                          ).toFixed(2)}
-                          MXN
-                        </span>
-
-                      </div>
-
-                    </div>
-
-
-                    <div class="order-card-body">
-
-                      <div class="order-meta-grid">
-
-                        <div class="meta-col">
-
-                          <strong>
-                            Destinatario
-                          </strong>
-
-                          <span>
-                            ${order.nombreCliente || 'Sin nombre'}
-                          </span>
-
-                        </div>
-
-
-                        <div class="meta-col">
-
-                          <strong>
-                            Dirección de Entrega
-                          </strong>
-
-                          <span>
-                            ${
-                              order.direccionEnvio ||
-                              'No especificada'
-                            }
-                          </span>
-
-                        </div>
-
-
-                        <div class="meta-col">
-
-                          <strong>
-                            Método de Pago
-                          </strong>
-
-                          <span>
-                            ${
-                              order.metodoPago
-                                ? order.metodoPago.replace(
-                                    /_/g,
-                                    ' '
-                                  )
-                                : 'No especificado'
-                            }
-                          </span>
-
-                        </div>
-
-
-                        <div class="meta-col">
-
-                          <strong>
-                            Costo de Envío
-                          </strong>
-
-                          <span>
-                            ${
-                              Number(order.envio) === 0
-                                ? 'GRATIS'
-                                : `$${Number(
-                                    order.envio
-                                  ).toFixed(2)} MXN`
-                            }
-                          </span>
-
-                        </div>
-
-                      </div>
-
-
-                      <h4
-                        class="order-items-title"
-                      >
-                        Libros incluidos en la orden:
-                      </h4>
-
-
-                      <div
-                        class="order-items-table"
-                      >
-
-                        ${
-                          itemsHtml ||
-                          `
-                            <p
-                              style="
-                                color:var(--color-text-muted);
-                                font-size:0.85rem;
-                              "
-                            >
-                              No hay detalles registrados.
-                            </p>
-                          `
-                        }
-
-                      </div>
-
-                    </div>
-
+          listEl.style.display = 'flex';
+          listEl.innerHTML = orders.map((order: any) => {
+            const dateStr = order.fecha ? new Date(order.fecha).toLocaleString('es-MX', {
+              dateStyle: 'medium',
+              timeStyle: 'short'
+            }) : 'Fecha reciente';
+
+            const statusClass = order.status === 'PAGADO' ? 'badge-success' : 'badge-warning';
+
+            const itemsHtml = (order.detalles || []).map((det: any) => `
+              <div class="order-item-row">
+                <div>
+                  <span class="order-item-title">${det.producto?.titulo || 'Libro'}</span>
+                  <span class="order-item-qty">× ${det.cantidad} un. ($${Number(det.precioUnitario).toFixed(2)})</span>
+                </div>
+                <span class="order-item-price">$${Number(det.subtotal).toFixed(2)} MXN</span>
+              </div>
+            `).join('');
+
+            return `
+              <div class="order-card card">
+                <div class="order-card-header">
+                  <div class="order-header-left">
+                    <span class="order-folio">${order.folio}</span>
+                    <span class="order-date">${dateStr}</span>
+                    <span class="badge ${statusClass}">${order.status}</span>
                   </div>
-                `;
+                  <div class="order-header-right">
+                    <span class="order-total-badge">$${Number(order.total).toFixed(2)} MXN</span>
+                    <a href="/orden-confirmada?folio=${order.folio}" class="btn btn-outline btn-sm" style="font-size:0.8rem; padding:0.25rem 0.5rem;">
+                      📄 Ver / Imprimir Comprobante
+                    </a>
+                  </div>
+                </div>
 
-              })
-              .join('');
+                <div class="order-card-body">
+                  <div class="order-meta-grid">
+                    <div class="meta-col">
+                      <strong>Destinatario</strong>
+                      <span>${order.nombreCliente}</span>
+                    </div>
+                    <div class="meta-col">
+                      <strong>Dirección de Entrega</strong>
+                      <span>${order.direccionEnvio || 'Guadalajara, Jalisco'}</span>
+                    </div>
+                    <div class="meta-col">
+                      <strong>Método de Pago</strong>
+                      <span>${order.metodoPago.replace('_', ' ')}</span>
+                    </div>
+                    <div class="meta-col">
+                      <strong>Costo de Envío</strong>
+                      <span>${Number(order.envio) === 0 ? 'GRATIS' : `$${Number(order.envio).toFixed(2)} MXN`}</span>
+                    </div>
+                  </div>
+
+                  <h4 class="order-items-title">Libros incluidos en la orden:</h4>
+                  <div class="order-items-table">
+                    ${itemsHtml || '<p style="color:var(--color-text-muted); font-size:0.85rem;">Detalles registrados en almacén.</p>'}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
         }
-
-      } catch (err: unknown) {
-
-        console.error(
-          'Error cargando órdenes:',
-          err
-        );
-
-
-        const message =
-          err instanceof Error
-            ? err.message
-            : 'No se pudieron cargar las órdenes.';
-
-
+      } catch (err: any) {
         if (loadingEl) {
-
-          loadingEl.innerHTML = `
-            <p style="color:#ef4444;">
-              ${message}
-            </p>
-          `;
-
+          loadingEl.innerHTML = `<p style="color:#ef4444;">No se pudieron cargar las órdenes: ${err.message}</p>`;
         }
       }
     }
 
-
-    // ==========================================
-    // Primera carga
-    // ==========================================
-
     loadOrders();
 
-
-    // ==========================================
-    // Botón actualizar
-    // ==========================================
-
     if (refreshBtn) {
-
-      refreshBtn.addEventListener(
-        'click',
-        () => {
-          loadOrders();
-        }
-      );
-
+      refreshBtn.addEventListener('click', loadOrders);
     }
-
   }
 </script>

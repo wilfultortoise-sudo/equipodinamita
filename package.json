@@ -1,17 +1,20 @@
 {
   "name": "integrador-web-bibliotech",
   "version": "1.0.0",
-  "description": "Orquestador de inicio para BiblioTech E-Commerce (Node.js Apollo GraphQL + Astro)",
+  "description": "Orquestador de inicio para BiblioTech E-Commerce - Arquitectura Dual (Node.js Apollo + Python FastAPI)",
   "scripts": {
     "start": "npm --prefix back start",
     "start:back": "npm --prefix back start",
+    "start:back-py": "python -m uvicorn app.main:app --app-dir back-python --port 8000 --reload",
     "start:front": "npm --prefix front run dev",
     "dev": "npm --prefix front run dev",
     "dev:back": "npm --prefix back start",
+    "dev:back-node": "npm --prefix back start",
+    "dev:back-py": "python -m uvicorn app.main:app --app-dir back-python --port 8000 --reload",
     "dev:front": "npm --prefix front run dev",
     "build:front": "npm --prefix front run build"
   },
-  "keywords": ["ecommerce", "graphql", "astro", "apollo-server", "sqlite"],
+  "keywords": ["ecommerce", "graphql", "react", "zustand", "fastapi", "strawberry", "apollo-server"],
   "author": "Equipo de Desarrollo CETI 8A1",
   "license": "MIT"
 }

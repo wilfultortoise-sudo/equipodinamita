@@ -12,6 +12,7 @@
       <a href="/" class="nav-item">Inicio</a>
       <a href="/catalogo" class="nav-item">Catálogo</a>
       <a href="/ordenes" class="nav-item">Mis Órdenes</a>
+      <div id="navbar-admin-links" style="display:inline-flex; align-items:center; gap:var(--spacing-lg);"></div>
     </nav>
 
     <div class="navbar__actions">
@@ -19,13 +20,8 @@
       <!-- Zona de autenticación dinámica (Rafa - Paso 2) -->
       <div class="navbar__auth" id="navbar-auth-zone">
         <slot name="auth">
-          <a href="/login" class="btn btn-outline btn-sm auth-login-btn">
-            Iniciar Sesión
-          </a>
-
-          <a href="/registro" class="btn btn-primary btn-sm auth-reg-btn">
-            Registrarse
-          </a>
+          <a href="/login" class="btn btn-outline btn-sm auth-login-btn">Iniciar Sesión</a>
+          <a href="/registro" class="btn btn-primary btn-sm auth-reg-btn">Registrarse</a>
         </slot>
       </div>
 
@@ -146,176 +142,6 @@
     box-shadow: 0 2px 4px rgba(37, 99, 235, 0.4);
   }
 
-  .navbar-user-area {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .navbar-user-name {
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: var(--color-primary);
-    white-space: nowrap;
-  }
-
-  :global(.navbar-user-area) {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  :global(.navbar-user-name) {
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: var(--color-primary);
-    white-space: nowrap;
-  }
-
-  :global(.admin-menu) {
-    position: relative;
-  }
-
-  :global(.admin-menu__button) {
-    width: 34px;
-    height: 34px;
-
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-
-    gap: 4px;
-    padding: 0;
-
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-
-    background: var(--color-surface);
-    cursor: pointer;
-
-    transition: all 0.2s ease;
-  }
-
-  :global(.admin-menu__button:hover) {
-    background: var(--color-background);
-    border-color: var(--color-primary);
-  }
-
-  :global(.admin-menu__button span) {
-    display: block;
-
-    width: 16px;
-    height: 2px;
-
-    background: var(--color-text-muted);
-    border-radius: 2px;
-  }
-
-  :global(.admin-menu__button:hover span) {
-    background: var(--color-primary);
-  }
-
-  :global(.admin-menu__dropdown) {
-    position: absolute;
-
-    top: calc(100% + 0.5rem);
-    right: 0;
-
-    min-width: 160px;
-
-    padding: 0.4rem;
-
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-
-    box-shadow: var(--shadow-md);
-
-    display: none;
-
-    z-index: 1000;
-  }
-
-  :global(.admin-menu__dropdown--open) {
-    display: block;
-  }
-
-  :global(.admin-menu__dropdown a) {
-    display: block;
-
-    padding: 0.65rem 0.75rem;
-
-    border-radius: var(--radius-sm);
-
-    color: var(--color-text-muted);
-    text-decoration: none;
-
-    font-size: 0.88rem;
-    font-weight: 500;
-
-    white-space: nowrap;
-  }
-
-  :global(.admin-menu__dropdown a:hover) {
-    background: var(--color-background);
-    color: var(--color-primary);
-  }
-
-  .user-menu {
-    position: relative;
-  }
-
-  .user-menu__trigger {
-    border: none;
-    background: transparent;
-    color: var(--color-primary);
-    font-size: 0.88rem;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 0.25rem 0.4rem;
-    border-radius: var(--radius-sm);
-    transition: background 0.2s ease;
-  }
-
-  .user-menu__trigger:hover {
-    background: var(--color-background);
-  }
-
-  .user-menu__dropdown {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    right: 0;
-    min-width: 160px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-md);
-    padding: 0.4rem;
-    display: none;
-    z-index: 1000;
-  }
-
-  .user-menu__dropdown--open {
-    display: block;
-  }
-
-  .user-menu__admin {
-    display: block;
-    padding: 0.6rem 0.75rem;
-    border-radius: var(--radius-sm);
-    color: var(--color-text-muted);
-    text-decoration: none;
-    font-size: 0.88rem;
-    font-weight: 500;
-    white-space: nowrap;
-  }
-
-  .user-menu__admin:hover {
-    background: var(--color-background);
-    color: var(--color-primary);
-  }
-
   @media (max-width: 768px) {
     .navbar__content {
       flex-wrap: wrap;
@@ -332,250 +158,87 @@
 
 <script is:inline>
   function updateNavBarState() {
+    // 1. Actualizar estado de autenticación (Rafa - Paso 2 + Admin Dashboard)
     const authZone = document.getElementById('navbar-auth-zone');
-
+    const adminNavLinks = document.getElementById('navbar-admin-links');
+    
     if (authZone) {
       const token = localStorage.getItem('auth_token');
       const userRaw = localStorage.getItem('auth_user');
-
       if (token && userRaw) {
         try {
           const user = JSON.parse(userRaw);
+          const primerNombre = user.nombre ? user.nombre.split(' ')[0] : 'Usuario';
+          const isAdmin = user.rol === 'ADMIN';
 
-          const primerNombre =
-            user.nombre
-              ? user.nombre.split(' ')[0]
-              : 'Usuario';
+          if (adminNavLinks) {
+            adminNavLinks.innerHTML = isAdmin ? `
+              <a href="/admin" class="nav-item admin-nav-link" style="color:#d97706; font-weight:700; display:inline-flex; align-items:center; gap:0.25rem;">
+                🛡️ Panel Admin
+              </a>
+              <a href="/admin/productos" class="nav-item" style="color:var(--color-primary); font-weight:600;">
+                📦 Inventario
+              </a>
+            ` : '';
+          }
 
           authZone.innerHTML = `
-            <div class="navbar-user-area">
-
-              <span class="navbar-user-name">
-                Hola, ${primerNombre}
-              </span>
-
-              ${
-                user.rol === 'ADMIN'
-                  ? `
-                    <div class="admin-menu">
-                      <button
-                        type="button"
-                        class="admin-menu__button"
-                        id="admin-menu-button"
-                        aria-label="Abrir menú de administrador"
-                        aria-expanded="false"
-                      >
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                      </button>
-
-                      <div
-                        class="admin-menu__dropdown"
-                        id="admin-menu-dropdown"
-                      >
-                        <a href="/admin">
-                          Panel Admin
-                        </a>
-                      </div>
-                    </div>
-                  `
-                  : ''
-              }
-
-              <button
-                id="nav-logout-btn"
-                class="btn btn-outline btn-sm"
-                style="
-                  padding:0.25rem 0.55rem;
-                  font-size:0.8rem;
-                "
-              >
-                Salir
-              </button>
-
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <div style="text-align:right; line-height:1.2;">
+                <span style="font-size:0.88rem; font-weight:700; color:var(--color-primary);">${primerNombre}</span>
+                ${isAdmin ? '<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.65rem; padding:0.1rem 0.35rem; display:block;">ADMIN</span>' : ''}
+              </div>
+              <button id="nav-logout-btn" class="btn btn-outline btn-sm" style="padding:0.25rem 0.55rem; font-size:0.8rem;">Salir</button>
             </div>
           `;
-
-          /*
-           * MENÚ ADMIN
-           */
-          if (user.rol === 'ADMIN') {
-            const adminButton =
-              document.getElementById(
-                'admin-menu-button'
-              );
-
-            const adminDropdown =
-              document.getElementById(
-                'admin-menu-dropdown'
-              );
-
-            if (adminButton && adminDropdown) {
-
-              adminButton.addEventListener(
-                'click',
-                (event) => {
-                  event.stopPropagation();
-
-                  adminDropdown.classList.toggle(
-                    'admin-menu__dropdown--open'
-                  );
-
-                  const abierto =
-                    adminDropdown.classList.contains(
-                      'admin-menu__dropdown--open'
-                    );
-
-                  adminButton.setAttribute(
-                    'aria-expanded',
-                    abierto.toString()
-                  );
-                }
-              );
-
-              document.addEventListener(
-                'click',
-                () => {
-                  adminDropdown.classList.remove(
-                    'admin-menu__dropdown--open'
-                  );
-
-                  adminButton.setAttribute(
-                    'aria-expanded',
-                    'false'
-                  );
-                }
-              );
-            }
-          }
-
-          /*
-           * CERRAR SESIÓN
-           */
-          const logoutBtn =
-            document.getElementById(
-              'nav-logout-btn'
-            );
-
+          const logoutBtn = document.getElementById('nav-logout-btn');
           if (logoutBtn) {
-            logoutBtn.addEventListener(
-              'click',
-              () => {
-
-                localStorage.removeItem(
-                  'auth_token'
-                );
-
-                localStorage.removeItem(
-                  'auth_user'
-                );
-
-                window.dispatchEvent(
-                  new CustomEvent(
-                    'auth-changed'
-                  )
-                );
-
-                if (window.showToast) {
-                  window.showToast(
-                    'Sesión cerrada correctamente',
-                    'info'
-                  );
-                }
-
-                setTimeout(() => {
-                  window.location.href = '/';
-                }, 400);
-              }
-            );
+            logoutBtn.addEventListener('click', () => {
+              localStorage.removeItem('auth_token');
+              localStorage.removeItem('auth_user');
+              window.dispatchEvent(new CustomEvent('auth-changed'));
+              if (window.showToast) window.showToast('Sesión cerrada correctamente', 'info');
+              setTimeout(() => {
+                window.location.href = '/';
+              }, 400);
+            });
           }
-
-        } catch (error) {
-          console.error(
-            'Error leyendo usuario:',
-            error
-          );
+        } catch (e) {
+          console.error(e);
         }
-
       } else {
-
+        if (adminNavLinks) adminNavLinks.innerHTML = '';
         authZone.innerHTML = `
-          <a
-            href="/login"
-            class="btn btn-outline btn-sm"
-          >
-            Iniciar Sesión
-          </a>
-
-          <a
-            href="/registro"
-            class="btn btn-primary btn-sm"
-          >
-            Registrarse
-          </a>
+          <a href="/login" class="btn btn-outline btn-sm">Iniciar Sesión</a>
+          <a href="/registro" class="btn btn-primary btn-sm">Registrarse</a>
         `;
       }
     }
 
-    /*
-     * CARRITO
-     */
-    const cartBadge =
-      document.getElementById('cart-badge');
-
+    // 2. Actualizar contador del carrito (Emmy - Paso 4)
+    const cartBadge = document.getElementById('cart-badge');
     if (cartBadge) {
       try {
-        const cart =
-          JSON.parse(
-            localStorage.getItem(
-              'ecommerce_cart'
-            ) || '[]'
-          );
-
-        const count =
-          cart.reduce(
-            (acc, item) =>
-              acc + (item.cantidad || 1),
-            0
-          );
-
-        cartBadge.textContent =
-          count.toString();
-
-        cartBadge.style.display =
-          count > 0
-            ? 'flex'
-            : 'none';
-
-      } catch (error) {
+        const cart = JSON.parse(localStorage.getItem('ecommerce_cart') || '[]');
+        const count = cart.reduce((acc, item) => acc + (item.cantidad || 1), 0);
+        cartBadge.textContent = count.toString();
+        cartBadge.style.display = count > 0 ? 'flex' : 'none';
+      } catch (e) {
         cartBadge.textContent = '0';
         cartBadge.style.display = 'none';
       }
     }
   }
 
+  // Ejecutar al cargar la página
   if (document.readyState === 'loading') {
-    document.addEventListener(
-      'DOMContentLoaded',
-      updateNavBarState
-    );
+    document.addEventListener('DOMContentLoaded', updateNavBarState);
   } else {
     updateNavBarState();
   }
 
-  window.addEventListener(
-    'cart-updated',
-    updateNavBarState
-  );
-
-  window.addEventListener(
-    'auth-changed',
-    updateNavBarState
-  );
-
-  window.addEventListener(
-    'storage',
-    updateNavBarState
-  );
+  // Escuchar eventos globales de cambio de carrito o autenticación
+  window.addEventListener('cart-updated', updateNavBarState);
+  window.addEventListener('auth-changed', updateNavBarState);
+  window.addEventListener('storage', updateNavBarState);
 </script>

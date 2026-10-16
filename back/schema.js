@@ -134,12 +134,6 @@ export const typeDefs = `#graphql
     referenciaPago: String
   }
 
-  """Respuesta de autenticacion con token Bearer y datos del usuario"""
-  type AuthPayload {
-    token: String!
-    usuario: Usuario!
-  }
-  
   """Indicadores principales del panel administrativo"""
   type AdminKPIs {
     ventasTotales: Float!
@@ -152,9 +146,16 @@ export const typeDefs = `#graphql
     pedidosEntregados: Int!
   }
 
+  """Respuesta de autenticacion con token Bearer y datos del usuario"""
+  type AuthPayload {
+    token: String!
+    usuario: Usuario!
+  }
+
   type Query {
     """Obtiene los indicadores principales del panel administrativo"""
     adminKPIs: AdminKPIs!
+
     """Obtiene libros con filtros opcionales de categoria, busqueda y paginacion"""
     productos(categoriaId: ID, busqueda: String, limite: Int, desde: Int): [Producto!]!
 
@@ -199,6 +200,9 @@ export const typeDefs = `#graphql
     """Actualiza la informacion de un libro (CRUD Update)"""
     actualizarProducto(id: ID!, datos: ProductoInput!): Producto!
 
+    """Actualiza rapidamente el stock de un libro en inventario"""
+    actualizarStock(id: ID!, stock: Int!): Producto!
+
     """Elimina un libro del catalogo (CRUD Delete)"""
     eliminarProducto(id: ID!): Boolean!
 
@@ -207,5 +211,16 @@ export const typeDefs = `#graphql
 
     """Actualiza el estado de un pedido"""
     actualizarEstadoPedido(id: ID!, status: StatusPedido!): Pedido!
+  }
+
+  type Subscription {
+    """Notifica en tiempo real cuando un cliente realiza una compra"""
+    pedidoCreado: Pedido!
+
+    """Notifica en tiempo real cuando cambia el estado de una orden"""
+    pedidoActualizado: Pedido!
+
+    """Notifica en tiempo real cuando se modifica el stock de un libro"""
+    stockActualizado: Producto!
   }
 `;

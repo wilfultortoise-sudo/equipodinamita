@@ -87,16 +87,56 @@ export default function PaymentGateway() {
     setCardExpiry(val);
   };
 
+  // Auto-prellenar titular desde la sesión del usuario si está disponible
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('auth_user');
+        if (raw) {
+          const u = JSON.parse(raw);
+          if (u?.nombre) {
+            setCardHolder((prev) => prev || u.nombre.toUpperCase());
+          }
+        }
+      } catch {}
+    }
+  }, []);
+
   // Notificar al formulario padre de checkout sobre el método seleccionado y datos
   useEffect(() => {
     let detallesPago = {};
     let referenciaPago = null;
+    let isCardValid = true;
+    let cardError = null;
 
     if (selectedMethod === 'TARJETA_CREDITO' || selectedMethod === 'TARJETA_DEBITO') {
       const cleanNum = cardNumber.replace(/\s+/g, '');
+      const isAmexCard = cleanNum.startsWith('3');
+      const minLen = isAmexCard ? 15 : 16;
+      const cleanExp = cardExpiry.trim();
+      const cleanCvv = cardCvv.trim();
+
+      if (cleanNum.length < minLen) {
+        isCardValid = false;
+        cardError = isAmexCard 
+          ? 'El número de tarjeta American Express debe tener 15 dígitos (formato 4-6-5).' 
+          : 'El número de tarjeta debe tener 16 dígitos.';
+      } else if (!cardHolder.trim()) {
+        isCardValid = false;
+        cardError = 'Ingresa el nombre del titular como figura en la tarjeta.';
+      } else if (!/^\d{2}\/\d{2}$/.test(cleanExp)) {
+        isCardValid = false;
+        cardError = 'La fecha de vencimiento debe tener el formato MM/AA (ej. 12/28).';
+      } else if (cleanCvv.length < (isAmexCard ? 4 : 3)) {
+        isCardValid = false;
+        cardError = isAmexCard
+          ? 'El código de seguridad CID para American Express debe tener 4 dígitos.'
+          : 'El código de seguridad CVV debe tener al menos 3 dígitos.';
+      }
+
       const last4 = cleanNum.slice(-4) || '••••';
       detallesPago = {
-        marca: cardBrand === 'amex' ? 'AMERICAN EXPRESS' : cardBrand.toUpperCase(),
+        marca: cardBrand === 'amex' ? 'AMERICAN EXPRESS' : (cardBrand === 'generic' ? 'TARJETA BANCARIA' : cardBrand.toUpperCase()),
         ultimos4: last4,
         titular: cardHolder || 'NO ESPECIFICADO'
       };
@@ -125,11 +165,13 @@ export default function PaymentGateway() {
     const payload = {
       metodoPago: selectedMethod === 'MERCADO_PAGO' ? walletType : selectedMethod,
       detallesPago: JSON.stringify(detallesPago),
-      referenciaPago
+      referenciaPago,
+      isCardValid,
+      cardError
     };
 
     window.dispatchEvent(new CustomEvent('payment-method-changed', { detail: payload }));
-  }, [selectedMethod, cardNumber, cardHolder, cardBrand, walletType, oxxoRef]);
+  }, [selectedMethod, cardNumber, cardHolder, cardBrand, walletType, oxxoRef, cardExpiry, cardCvv]);
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text.replace(/\s+/g, ''));
