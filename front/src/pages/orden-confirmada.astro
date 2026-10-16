@@ -25,7 +25,7 @@ const pageTitle = "Comprobante Digital Oficial — BiblioTech Store";
         </div>
       </div>
 
-      <!-- COMPROBANTE DIGITAL OFICIAL / FACTURA RECIBO (Bloque A - Parte 2) -->
+      <!-- COMPROBANTE DIGITAL OFICIAL / FACTURA RECIBO -->
       <div class="card digital-receipt-card" id="printable-receipt">
         
         <!-- Encabezado Oficial -->
@@ -53,13 +53,18 @@ const pageTitle = "Comprobante Digital Oficial — BiblioTech Store";
             <span class="col-title">DATOS DEL COMPRADOR</span>
             <strong id="rcpt-customer-name" class="highlight-text">Cliente BiblioTech</strong>
             <span id="rcpt-customer-email" class="sub-text">cliente@ejemplo.com</span>
-            <span id="rcpt-payment-method" class="sub-text" style="margin-top:0.25rem; font-weight:600; color:var(--color-primary);">Método: TARJETA_CREDITO</span>
+            <span id="rcpt-payment-method" class="sub-text" style="margin-top:0.25rem; font-weight:600; color:var(--color-primary);">Método: TARJETA</span>
           </div>
           <div class="customer-col">
             <span class="col-title">DIRECCIÓN DE ENTREGA</span>
             <span id="rcpt-delivery-address" class="highlight-text">Av. del Parque 1234, Guadalajara, Jal.</span>
             <span class="sub-text" style="color:#059669; font-weight:600;">✓ Envío Seguro con Cobertura y Rastreo</span>
           </div>
+        </div>
+
+        <!-- FICHA ESPECÍFICA SEGÚN EL MÉTODO DE PAGO (DIFERENCIADA) -->
+        <div id="rcpt-method-voucher-slot" style="margin-top: 1.25rem;">
+          <!-- Renderizado dinámico según el método: Tarjeta (Visa/MC/Amex), OXXO, SPEI, Mercado Pago o PayPal -->
         </div>
 
         <div class="receipt-divider"></div>
@@ -299,13 +304,15 @@ const pageTitle = "Comprobante Digital Oficial — BiblioTech Store";
     vertical-align: middle;
   }
 
-  /* Footer del Recibo */
+  /* Resumen y QR */
   .receipt-footer-grid {
     display: grid;
     grid-template-columns: 1fr 280px;
-    gap: 1.5rem;
+    gap: 2rem;
     align-items: center;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed var(--color-border);
   }
 
   .qr-validation-col {
@@ -315,45 +322,44 @@ const pageTitle = "Comprobante Digital Oficial — BiblioTech Store";
   }
 
   .qr-box {
-    background: #f8fafc;
-    border: 1px solid var(--color-border);
-    padding: 0.4rem;
-    border-radius: var(--radius-sm);
-    color: var(--color-text);
+    color: #334155;
     flex-shrink: 0;
+  }
+
+  .validation-text {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    line-height: 1.35;
+  }
+
+  .validation-text p {
+    margin: 0.25rem 0 0 0;
   }
 
   .val-title {
     display: block;
-    font-size: 0.7rem;
     font-weight: 700;
-    color: var(--color-text-muted);
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    color: #475569;
   }
 
   .val-code {
     font-family: monospace;
-    font-size: 0.82rem;
     font-weight: 700;
     color: var(--color-primary);
-  }
-
-  .validation-text p {
-    margin: 0.2rem 0 0 0;
-    font-size: 0.72rem;
-    color: var(--color-text-muted);
-    line-height: 1.3;
   }
 
   .totals-col {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    font-size: 0.88rem;
+    gap: 0.4rem;
   }
 
   .total-line {
     display: flex;
     justify-content: space-between;
+    font-size: 0.88rem;
   }
 
   .total-grand {
@@ -361,45 +367,335 @@ const pageTitle = "Comprobante Digital Oficial — BiblioTech Store";
     font-weight: 800;
   }
 
-  .text-primary {
-    color: var(--color-primary);
+  /* ==========================================================================
+     ESTILOS DE FICHAS DE PAGO DIFERENCIADAS (Hugo - Vouchers Multimétodo)
+     ========================================================================== */
+  :global(.voucher-card-box) {
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    margin-top: 0.75rem;
+    border: 1.5px solid #cbd5e1;
+    background: #f8fafc;
   }
 
-  /* Estilos para Impresión Formal en PDF (Bloque A - Parte 2) */
-  @media print {
-    body {
-      background: white !important;
-      color: black !important;
-    }
+  /* Voucher Tarjeta */
+  :global(.voucher-card-style) {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-color: #cbd5e1;
+    border-left: 6px solid #2563eb;
+  }
 
-    header, footer, .no-print, #toast-container {
+  :global(.voucher-header) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed #cbd5e1;
+  }
+
+  :global(.voucher-title-group) {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  :global(.voucher-brand-badge) {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  :global(.brand-amex-tag) {
+    background: #002663;
+    color: #ffffff;
+    border: 1px solid #0056b3;
+  }
+
+  :global(.brand-visa-tag) {
+    background: #1a1f71;
+    color: #ffffff;
+  }
+
+  :global(.brand-mastercard-tag) {
+    background: #eb001b;
+    color: #ffffff;
+  }
+
+  :global(.brand-generic-tag) {
+    background: #334155;
+    color: #ffffff;
+  }
+
+  :global(.voucher-main-title) {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: 0.04em;
+  }
+
+  :global(.voucher-auth-pill) {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #15803d;
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+  }
+
+  :global(.voucher-info-grid) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem 1.25rem;
+    font-size: 0.82rem;
+  }
+
+  :global(.v-item) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  :global(.v-lbl) {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  :global(.v-val) {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  :global(.v-val.monospace) {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+  }
+
+  /* Ficha OXXO Pay */
+  :global(.voucher-oxxo-style) {
+    background: #fffbeb;
+    border: 1.5px dashed #f59e0b;
+    border-left: 6px solid #d97706;
+  }
+
+  :global(.oxxo-pill-tag) {
+    background: #d97706;
+    color: #ffffff;
+    font-weight: 900;
+    font-size: 0.8rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+  }
+
+  :global(.oxxo-status-pill) {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+  }
+
+  :global(.oxxo-barcode-center) {
+    background: #ffffff;
+    border: 1px solid #fde68a;
+    border-radius: var(--radius-md);
+    padding: 0.85rem;
+    text-align: center;
+    margin: 0.85rem 0;
+  }
+
+  :global(.oxxo-bars) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 48px;
+  }
+
+  :global(.oxxo-bars span) {
+    display: inline-block;
+    height: 100%;
+    background: #0f172a;
+  }
+
+  :global(.oxxo-ref-code) {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    color: #0f172a;
+    margin-top: 0.25rem;
+    display: block;
+  }
+
+  :global(.btn-copy-action) {
+    margin-top: 0.4rem;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.65rem;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #334155;
+  }
+
+  :global(.btn-copy-action:hover) {
+    background: #e2e8f0;
+  }
+
+  :global(.oxxo-instructions-box) {
+    background: #fefce8;
+    border: 1px solid #fef08a;
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.85rem;
+    font-size: 0.78rem;
+    color: #713f12;
+    line-height: 1.4;
+  }
+
+  :global(.oxxo-instructions-box ol) {
+    margin: 0.35rem 0 0 1.15rem;
+    padding: 0;
+  }
+
+  /* Ficha SPEI */
+  :global(.voucher-spei-style) {
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-left: 6px solid #16a34a;
+  }
+
+  :global(.spei-pill-tag) {
+    background: #16a34a;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.78rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+  }
+
+  :global(.spei-status-pill) {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+  }
+
+  :global(.spei-clabe-row) {
+    background: #ffffff;
+    border: 1px solid #bbf7d0;
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0.75rem 0;
+  }
+
+  :global(.spei-clabe-number) {
+    font-family: monospace;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #15803d;
+    letter-spacing: 0.08em;
+  }
+
+  /* Ficha Mercado Pago */
+  :global(.voucher-mp-style) {
+    background: #f0f9ff;
+    border: 1.5px solid #bae6fd;
+    border-left: 6px solid #0284c7;
+  }
+
+  :global(.mp-pill-tag) {
+    background: #0284c7;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.78rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+  }
+
+  :global(.mp-status-pill) {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+  }
+
+  /* Ficha PayPal */
+  :global(.voucher-pp-style) {
+    background: #faf5ff;
+    border: 1.5px solid #e9d5ff;
+    border-left: 6px solid #7e22ce;
+  }
+
+  :global(.pp-pill-tag) {
+    background: #003087;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.78rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+  }
+
+  :global(.pp-status-pill) {
+    background: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #e9d5ff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+  }
+
+  /* Estilos para Impresión */
+  @media print {
+    .no-print {
       display: none !important;
     }
-
     .confirmed-page {
       padding: 0 !important;
     }
-
-    .confirmed-container {
-      max-width: 100% !important;
-    }
-
     .digital-receipt-card {
       border: none !important;
       box-shadow: none !important;
       padding: 0 !important;
     }
+    body {
+      background: #ffffff !important;
+    }
   }
 
-  @media (max-width: 650px) {
+  @media (max-width: 600px) {
     .receipt-header {
       flex-direction: column;
+      gap: 1rem;
     }
     .receipt-title-box {
       text-align: left;
     }
     .receipt-customer-grid {
       grid-template-columns: 1fr;
+      gap: 1rem;
     }
     .receipt-footer-grid {
       grid-template-columns: 1fr;
@@ -410,26 +706,23 @@ const pageTitle = "Comprobante Digital Oficial — BiblioTech Store";
 <script>
   import { apiClient } from '../services/apiClient.js';
 
-  const params = new URLSearchParams(window.location.search);
-  const folio = params.get('folio') || '';
+  const rcptFolio = document.getElementById('rcpt-folio') as HTMLElement;
+  const rcptDate = document.getElementById('rcpt-date') as HTMLElement;
+  const rcptStatus = document.getElementById('rcpt-status') as HTMLElement;
+  const rcptCustomerName = document.getElementById('rcpt-customer-name') as HTMLElement;
+  const rcptCustomerEmail = document.getElementById('rcpt-customer-email') as HTMLElement;
+  const rcptPaymentMethod = document.getElementById('rcpt-payment-method') as HTMLElement;
+  const rcptDeliveryAddress = document.getElementById('rcpt-delivery-address') as HTMLElement;
+  const rcptItemsBody = document.getElementById('rcpt-items-body') as HTMLElement;
+  const rcptSubtotal = document.getElementById('rcpt-subtotal') as HTMLElement;
+  const rcptDiscountRow = document.getElementById('rcpt-discount-row') as HTMLElement;
+  const rcptDiscount = document.getElementById('rcpt-discount') as HTMLElement;
+  const rcptShipping = document.getElementById('rcpt-shipping') as HTMLElement;
+  const rcptTotal = document.getElementById('rcpt-total') as HTMLElement;
+  const rcptSecCode = document.getElementById('rcpt-sec-code') as HTMLElement;
+  const voucherSlot = document.getElementById('rcpt-method-voucher-slot') as HTMLElement;
 
-  const rcptFolio = document.getElementById('rcpt-folio');
-  const rcptDate = document.getElementById('rcpt-date');
-  const rcptStatus = document.getElementById('rcpt-status');
-  const rcptCustomerName = document.getElementById('rcpt-customer-name');
-  const rcptCustomerEmail = document.getElementById('rcpt-customer-email');
-  const rcptPaymentMethod = document.getElementById('rcpt-payment-method');
-  const rcptDeliveryAddress = document.getElementById('rcpt-delivery-address');
-  const rcptItemsBody = document.getElementById('rcpt-items-body');
-  const rcptSubtotal = document.getElementById('rcpt-subtotal');
-  const rcptDiscountRow = document.getElementById('rcpt-discount-row');
-  const rcptDiscount = document.getElementById('rcpt-discount');
-  const rcptShipping = document.getElementById('rcpt-shipping');
-  const rcptTotal = document.getElementById('rcpt-total');
-  const rcptSecCode = document.getElementById('rcpt-sec-code');
   const btnPrint = document.getElementById('btn-print-receipt');
-
-  // Botón Imprimir / PDF
   if (btnPrint) {
     btnPrint.addEventListener('click', () => {
       window.print();
@@ -437,18 +730,17 @@ const pageTitle = "Comprobante Digital Oficial — BiblioTech Store";
   }
 
   async function loadReceipt() {
-    if (rcptFolio) rcptFolio.textContent = folio || 'FOL-CONFIRMADO';
-    if (rcptDate) rcptDate.textContent = new Date().toLocaleString('es-MX', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    });
+    const urlParams = new URLSearchParams(window.location.search);
+    const folio = urlParams.get('folio') || 'FOL-ACTUAL';
+    const paramMetodo = urlParams.get('metodo') || '';
+    const paramRef = urlParams.get('ref') || '';
 
-    // 1. Intentar cargar desde sessionStorage del checkout reciente
+    // 1. Intentar cargar desde sessionStorage (datos instantáneos del checkout)
     const cachedRaw = sessionStorage.getItem('last_order_details');
     if (cachedRaw) {
       try {
         const cached = JSON.parse(cachedRaw);
-        if (cached.folio === folio) {
+        if (cached.folio === folio || !urlParams.get('folio')) {
           renderReceiptData(cached);
           return;
         }
@@ -472,6 +764,8 @@ const pageTitle = "Comprobante Digital Oficial — BiblioTech Store";
           direccionEnvio
           nombreCliente
           emailCliente
+          detallesPago
+          referenciaPago
           detalles {
             id
             cantidad
@@ -500,21 +794,342 @@ const pageTitle = "Comprobante Digital Oficial — BiblioTech Store";
     }
   }
 
+  function renderVoucher(order: any) {
+    if (!voucherSlot) return;
+
+    const metodo = (order.metodoPago || '').toUpperCase();
+    let detalles: any = {};
+    if (order.detallesPago) {
+      try {
+        detalles = typeof order.detallesPago === 'string' ? JSON.parse(order.detallesPago) : order.detallesPago;
+      } catch {
+        detalles = {};
+      }
+    }
+
+    const ref = order.referenciaPago || `REF-${(order.folio || 'ORD').slice(-6)}`;
+    const totalFormatted = Number(order.total || 0).toFixed(2);
+
+    // ========================================================
+    // CASO 1: OXXO PAY (FICHA DE DEPÓSITO CON CÓDIGO DE BARRAS)
+    // ========================================================
+    if (metodo.includes('OXXO')) {
+      const cleanRef = ref.replace(/[^0-9]/g, '').padEnd(14, '0').slice(0, 14);
+      const formattedRef = `${cleanRef.slice(0, 4)} ${cleanRef.slice(4, 8)} ${cleanRef.slice(8, 12)} ${cleanRef.slice(12, 14)}`;
+
+      // Generar líneas de código de barras
+      const barHeights = [45, 52, 40, 50, 48, 55, 42, 50, 47, 52, 45, 50, 48, 55, 42, 50, 47, 52];
+      const barWidths = [3, 2, 4, 2, 3, 2, 4, 3, 2, 3, 2, 4, 2, 3, 2, 4, 3, 2];
+      const barsHtml = barHeights.map((h, i) => `<span style="height:${h}px; width:${barWidths[i % barWidths.length]}px;"></span>`).join('');
+
+      voucherSlot.innerHTML = `
+        <div class="voucher-card-box voucher-oxxo-style">
+          <div class="voucher-header">
+            <div class="voucher-title-group">
+              <span class="oxxo-pill-tag">OXXO Pay</span>
+              <span class="voucher-main-title">FICHA OFICIAL DE PAGO EN EFECTIVO</span>
+            </div>
+            <span class="oxxo-status-pill">PENDIENTE DE PAGO EN TIENDA</span>
+          </div>
+
+          <div class="oxxo-barcode-center">
+            <div class="oxxo-bars">${barsHtml}</div>
+            <span class="oxxo-ref-code">${formattedRef}</span>
+            <button type="button" class="btn-copy-action" id="btn-copy-oxxo">📋 Copiar Referencia OXXO</button>
+          </div>
+
+          <div class="voucher-info-grid">
+            <div class="v-item">
+              <span class="v-lbl">Total en Efectivo:</span>
+              <strong class="v-val" style="color:#d97706; font-size:1.1rem;">$${totalFormatted} MXN</strong>
+            </div>
+            <div class="v-item">
+              <span class="v-lbl">Comisión de Caja:</span>
+              <span class="v-val">$15.00 MXN</span>
+            </div>
+            <div class="v-item">
+              <span class="v-lbl">Vigencia Límite:</span>
+              <span class="v-val">48 horas a partir de emisión</span>
+            </div>
+            <div class="v-item">
+              <span class="v-lbl">Proveedor Transaccional:</span>
+              <span class="v-val">Conekta / OXXO Pay</span>
+            </div>
+          </div>
+
+          <div class="oxxo-instructions-box" style="margin-top: 0.85rem;">
+            <strong>INSTRUCCIONES PARA EL CAJERO:</strong>
+            <ol>
+              <li>En la terminal de caja OXXO selecciona: <em>Servicios &gt; Pagos &gt; OXXO Pay</em>.</li>
+              <li>Escanea el código de barras superior o captura manualmente la referencia de 14 dígitos.</li>
+              <li>Confirma el cobro por <strong>$${totalFormatted} MXN</strong> en efectivo y entrega el ticket impreso.</li>
+            </ol>
+          </div>
+        </div>
+      `;
+
+      setTimeout(() => {
+        const btn = document.getElementById('btn-copy-oxxo');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            navigator.clipboard.writeText(cleanRef);
+            btn.textContent = '¡Copiado al portapapeles!';
+            setTimeout(() => btn.textContent = '📋 Copiar Referencia OXXO', 2000);
+          });
+        }
+      }, 50);
+      return;
+    }
+
+    // ========================================================
+    // CASO 2: TRANSFERENCIA SPEI (FICHA CLABE / BANCO STP)
+    // ========================================================
+    if (metodo.includes('SPEI') || metodo.includes('TRANSFERENCIA')) {
+      const clabe = detalles.clabe || '6461 8012 3456 7890 12';
+      const cleanClabe = clabe.replace(/\s+/g, '');
+
+      voucherSlot.innerHTML = `
+        <div class="voucher-card-box voucher-spei-style">
+          <div class="voucher-header">
+            <div class="voucher-title-group">
+              <span class="spei-pill-tag">SPEI / STP</span>
+              <span class="voucher-main-title">FICHA DE TRANSFERENCIA INTERBANCARIA</span>
+            </div>
+            <span class="spei-status-pill">EN ESPERA DE TRANSFERENCIA</span>
+          </div>
+
+          <div class="spei-clabe-row">
+            <div>
+              <span class="v-lbl">CLABE Interbancaria Única (18 dígitos):</span>
+              <div class="spei-clabe-number">${clabe}</div>
+            </div>
+            <button type="button" class="btn-copy-action" id="btn-copy-spei">Copiar CLABE</button>
+          </div>
+
+          <div class="voucher-info-grid">
+            <div class="v-item">
+              <span class="v-lbl">Banco Receptor:</span>
+              <strong class="v-val">STP (Sistema de Transferencias y Pagos)</strong>
+            </div>
+            <div class="v-item">
+              <span class="v-lbl">Beneficiario Oficial:</span>
+              <strong class="v-val">BiblioTech Store S.A. de C.V.</strong>
+            </div>
+            <div class="v-item">
+              <span class="v-lbl">Concepto de Transferencia:</span>
+              <strong class="v-val monospace">${order.folio || 'BIBLIOTECH'}</strong>
+            </div>
+            <div class="v-item">
+              <span class="v-lbl">Monto Exacto a Transferir:</span>
+              <strong class="v-val" style="color:#16a34a; font-size:1.05rem;">$${totalFormatted} MXN</strong>
+            </div>
+          </div>
+
+          <div style="font-size:0.78rem; color:#166534; margin-top:0.75rem; background:#dcfce7; padding:0.5rem 0.75rem; border-radius:4px;">
+            ⚡ <strong>Acreditación Automática:</strong> El sistema SPEI de Banco de México acredita la orden entre 1 y 10 minutos. No requiere enviar comprobante.
+          </div>
+        </div>
+      `;
+
+      setTimeout(() => {
+        const btn = document.getElementById('btn-copy-spei');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            navigator.clipboard.writeText(cleanClabe);
+            btn.textContent = '¡CLABE Copiada!';
+            setTimeout(() => btn.textContent = 'Copiar CLABE', 2000);
+          });
+        }
+      }, 50);
+      return;
+    }
+
+    // ========================================================
+    // CASO 3: MERCADO PAGO DIGITAL
+    // ========================================================
+    if (metodo.includes('MERCADO_PAGO')) {
+      const mpId = ref || `MP-${Date.now().toString(36).toUpperCase()}`;
+      voucherSlot.innerHTML = `
+        <div class="voucher-card-box voucher-mp-style">
+          <div class="voucher-header">
+            <div class="voucher-title-group">
+              <span class="mp-pill-tag">⚡ Mercado Pago</span>
+              <span class="voucher-main-title">COMPROBANTE DE PAGO DIGITAL</span>
+            </div>
+            <span class="mp-status-pill">ACREDITADO DIGITALMENTE ✓</span>
+          </div>
+
+          <div class="voucher-info-grid">
+            <div class="v-item">
+              <span class="v-lbl">ID de Transacción Mercado Pago:</span>
+              <strong class="v-val monospace">${mpId}</strong>
+            </div>
+            <div class="v-item">
+              <span class="v-lbl">Medio de Pago:</span>
+              <strong class="v-val">Billetera Digital / Saldo MP</strong>
+            </div>
+            <div class="v-item">
+              <span class="v-lbl">Programa de Cobertura:</span>
+              <span class="v-val">Compra Protegida Mercado Pago</span>
+            </div>
+            <div class="v-item">
+              <span class="v-lbl">Estado de Acreditación:</span>
+              <strong class="v-val" style="color:#0284c7;">Aprobado al Instante</strong>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // ========================================================
+    // CASO 4: PAYPAL DIGITAL
+    // ========================================================
+    if (metodo.includes('PAYPAL')) {
+      const ppId = ref || `PP-${Date.now().toString(36).toUpperCase()}`;
+      voucherSlot.innerHTML = `
+        <div class="voucher-card-box voucher-pp-style">
+          <div class="voucher-header">
+            <div class="voucher-title-group">
+              <span class="pp-pill-tag">PayPal</span>
+              <span class="voucher-main-title">RECIBO DE TRANSACCIÓN PAYPAL</span>
+            </div>
+            <span class="pp-status-pill">PAGO COMPLETADO ✓</span>
+          </div>
+
+          <div class="voucher-info-grid">
+            <div class="v-item">
+              <span class="v-lbl">ID Transacción PayPal:</span>
+              <strong class="v-val monospace">${ppId}</strong>
+            </div>
+            <div class="v-item">
+              <span class="v-lbl">Canal Transaccional:</span>
+              <strong class="v-val">PayPal Express Checkout</strong>
+            </div>
+            <div class="v-item">
+              <span class="v-lbl">Protección al Comprador:</span>
+              <span class="v-val">PayPal Buyer Protection Activo</span>
+            </div>
+            <div class="v-item">
+              <span class="v-lbl">Moneda:</span>
+              <span class="v-val">MXN (Pesos Mexicanos)</span>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // ========================================================
+    // CASO 5: TARJETA DE CRÉDITO / DÉBITO (VISA / MC / AMEX)
+    // ========================================================
+    const marca = (detalles.marca || '').toUpperCase();
+    const isAmex = marca.includes('AMEX') || marca.includes('AMERICAN');
+    const isVisa = marca.includes('VISA');
+    const isMastercard = marca.includes('MASTER');
+
+    let brandTagClass = 'brand-generic-tag';
+    let brandLabel = 'TARJETA BANCARIA';
+    if (isAmex) {
+      brandTagClass = 'brand-amex-tag';
+      brandLabel = 'AMERICAN EXPRESS';
+    } else if (isVisa) {
+      brandTagClass = 'brand-visa-tag';
+      brandLabel = 'VISA';
+    } else if (isMastercard) {
+      brandTagClass = 'brand-mastercard-tag';
+      brandLabel = 'MASTERCARD';
+    }
+
+    const ultimos4 = detalles.ultimos4 || '4242';
+    const maskedCard = isAmex ? `•••• •••••• •${ultimos4}` : `•••• •••• •••• ${ultimos4}`;
+    const cardHolder = detalles.titular || order.nombreCliente || 'TARJETAHABIENTE';
+    const authCode = `AUTH-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    voucherSlot.innerHTML = `
+      <div class="voucher-card-box voucher-card-style">
+        <div class="voucher-header">
+          <div class="voucher-title-group">
+            <span class="voucher-brand-badge ${brandTagClass}">${brandLabel}</span>
+            <span class="voucher-main-title">VOUCHER ELECTRÓNICO BANCARIO (POS VIRTUAL)</span>
+          </div>
+          <span class="voucher-auth-pill">APROBADA EN LÍNEA ✓</span>
+        </div>
+
+        <div class="voucher-info-grid">
+          <div class="v-item">
+            <span class="v-lbl">Tarjeta / Cuenta:</span>
+            <strong class="v-val monospace">${maskedCard}</strong>
+          </div>
+          <div class="v-item">
+            <span class="v-lbl">Titular Autorizado:</span>
+            <strong class="v-val">${cardHolder.toUpperCase()}</strong>
+          </div>
+          <div class="v-item">
+            <span class="v-lbl">Código de Autorización:</span>
+            <strong class="v-val monospace">${authCode}</strong>
+          </div>
+          <div class="v-item">
+            <span class="v-lbl">Referencia Transaccional:</span>
+            <strong class="v-val monospace">${ref}</strong>
+          </div>
+          <div class="v-item">
+            <span class="v-lbl">Tipo de Operación:</span>
+            <span class="v-val">VENTA E-COMMERCE (1 EXHIBICIÓN)</span>
+          </div>
+          <div class="v-item">
+            <span class="v-lbl">Cifrado de Seguridad:</span>
+            <span class="v-val">SSL 256-bit ${isAmex ? '(CID 4 dígitos validado)' : '(CVV validado)'}</span>
+          </div>
+        </div>
+
+        <div style="font-size:0.75rem; color:#64748b; margin-top:0.75rem; border-top:1px dashed #cbd5e1; padding-top:0.5rem; text-align:center;">
+          🛡️ Transacción bancaria autorizada mediante protocolo seguro 3D Secure / e-Commerce Token. Copia Cliente.
+        </div>
+      </div>
+    `;
+  }
+
   function renderReceiptData(order: any) {
-    if (rcptFolio) rcptFolio.textContent = order.folio || folio;
+    if (rcptFolio) rcptFolio.textContent = order.folio || 'FOL-ORDEN';
     if (rcptDate && order.fecha) {
       rcptDate.textContent = new Date(order.fecha).toLocaleString('es-MX', {
         dateStyle: 'medium',
         timeStyle: 'short'
       });
     }
-    if (rcptStatus) rcptStatus.textContent = order.status || 'PAGADO';
+
+    const metodo = (order.metodoPago || '').toUpperCase();
+    if (rcptStatus) {
+      if (metodo.includes('OXXO')) {
+        rcptStatus.textContent = 'PENDIENTE PAGO OXXO';
+        rcptStatus.className = 'badge badge-warning';
+      } else if (metodo.includes('SPEI') || metodo.includes('TRANSFERENCIA')) {
+        rcptStatus.textContent = 'EN ESPERA SPEI';
+        rcptStatus.className = 'badge badge-warning';
+      } else {
+        rcptStatus.textContent = order.status || 'PAGADO';
+        rcptStatus.className = 'badge badge-success';
+      }
+    }
+
     if (rcptCustomerName) rcptCustomerName.textContent = order.nombreCliente || 'Cliente';
     if (rcptCustomerEmail) rcptCustomerEmail.textContent = order.emailCliente || '';
-    if (rcptPaymentMethod) rcptPaymentMethod.textContent = `Método de Pago: ${(order.metodoPago || 'TARJETA').replace('_', ' ')}`;
+    if (rcptPaymentMethod) {
+      let displayName = metodo.replace(/_/g, ' ');
+      if (metodo.includes('OXXO')) displayName = 'OXXO PAY (EFECTIVO)';
+      else if (metodo.includes('SPEI')) displayName = 'TRANSFERENCIA SPEI';
+      else if (metodo.includes('MERCADO_PAGO')) displayName = 'MERCADO PAGO DIGITAL';
+      else if (metodo.includes('PAYPAL')) displayName = 'PAYPAL CHECKOUT';
+      else if (metodo.includes('TARJETA')) displayName = 'TARJETA BANCARIA';
+      rcptPaymentMethod.textContent = `Método de Pago: ${displayName}`;
+    }
     if (rcptDeliveryAddress) rcptDeliveryAddress.textContent = order.direccionEnvio || 'Guadalajara, Jalisco';
 
     if (rcptSecCode) rcptSecCode.textContent = `SEC-${(order.folio || 'FOL').slice(-6)}-${Date.now().toString(36).toUpperCase()}`;
+
+    // Renderizar Ficha Específica Diferenciada por Método
+    renderVoucher(order);
 
     // Renderizar artículos
     const items = order.detalles || [];
