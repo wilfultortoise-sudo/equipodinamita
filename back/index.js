@@ -102,34 +102,43 @@ const server = new ApolloServer({
 // 7. Iniciar el servidor Apollo
 await server.start();
 
-// 8. Configurar middlewares de Express en /graphql
+// 8. Configurar middlewares globales de Express (CORS y JSON)
 app.use(
-  '/graphql',
-  cors(),
-  express.json(),
-  expressMiddleware(server, {
-    context: async ({ req }) => {
-      const rawHeader = req.headers.authorization || '';
-      let currentUser = null;
-      if (rawHeader) {
-        const decoded = verifyToken(rawHeader);
-        if (decoded && decoded.id) {
-          currentUser = dbRepo.getUsuarioById(decoded.id);
-        }
-      }
-      return {
-        token: rawHeader,
-        currentUser
-      };
-    }
+  cors({
+    origin: '*',
+    credentials: true
   })
 );
+
+app.use(express.json());
+
+const apolloMiddleware = expressMiddleware(server, {
+  context: async ({ req }) => {
+    const rawHeader = req.headers.authorization || '';
+    let currentUser = null;
+    if (rawHeader) {
+      const decoded = verifyToken(rawHeader);
+      if (decoded && decoded.id) {
+        currentUser = dbRepo.getUsuarioById(decoded.id);
+      }
+    }
+    return {
+      token: rawHeader,
+      currentUser
+    };
+  }
+});
+
+// Soporte dual: /graphql (estándar GraphQL) y / (compatibilidad con frontend existente)
+app.use('/graphql', apolloMiddleware);
+app.post('/', apolloMiddleware);
 
 // Endpoint de verificación de salud
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     server: 'Apollo Server 4 + graphql-ws',
+    endpoints: ['/graphql', '/'],
     subscriptions: ['pedidoCreado', 'pedidoActualizado', 'stockActualizado']
   });
 });
