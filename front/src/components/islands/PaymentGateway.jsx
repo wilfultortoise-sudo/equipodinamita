@@ -87,16 +87,79 @@ export default function PaymentGateway() {
     setCardExpiry(val);
   };
 
+  // Límite dinámico del código de seguridad: 4 dígitos para American Express (CID), 3 dígitos para Visa/Mastercard (CVV)
+  const maxCvvDigits = cardBrand === 'amex' ? 4 : 3;
+
+  // Ajustar automáticamente el código de seguridad si cambia la marca de tarjeta
+  useEffect(() => {
+    if (cardBrand !== 'amex' && cardCvv.length > 3) {
+      setCardCvv((prev) => prev.slice(0, 3));
+    }
+  }, [cardBrand]);
+
+  const handleCvvChange = (e) => {
+    // Solo números estrictos y limitado a maxCvvDigits
+    const val = e.target.value.replace(/\D/g, '').slice(0, maxCvvDigits);
+    setCardCvv(val);
+  };
+
+  const handleCardHolderChange = (e) => {
+    // Solo permitir letras, espacios y caracteres alfabéticos
+    const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
+    setCardHolder(val);
+  };
+
+  // Auto-prellenar titular desde la sesión del usuario si está disponible
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('auth_user');
+        if (raw) {
+          const u = JSON.parse(raw);
+          if (u?.nombre) {
+            setCardHolder((prev) => prev || u.nombre.toUpperCase());
+          }
+        }
+      } catch {}
+    }
+  }, []);
+
   // Notificar al formulario padre de checkout sobre el método seleccionado y datos
   useEffect(() => {
     let detallesPago = {};
     let referenciaPago = null;
+    let isCardValid = true;
+    let cardError = null;
 
     if (selectedMethod === 'TARJETA_CREDITO' || selectedMethod === 'TARJETA_DEBITO') {
       const cleanNum = cardNumber.replace(/\s+/g, '');
+      const isAmexCard = cleanNum.startsWith('3');
+      const expectedCardLen = isAmexCard ? 15 : 16;
+      const expectedCvvLen = isAmexCard ? 4 : 3;
+      const cleanExp = cardExpiry.trim();
+      const cleanCvv = cardCvv.trim();
+
+      if (cleanNum.length !== expectedCardLen) {
+        isCardValid = false;
+        cardError = isAmexCard 
+          ? `El número de tarjeta American Express debe tener exactamente 15 dígitos (formato 4-6-5). Llevas ${cleanNum.length}.` 
+          : `El número de tarjeta debe tener exactamente 16 dígitos. Llevas ${cleanNum.length}.`;
+      } else if (!cardHolder.trim()) {
+        isCardValid = false;
+        cardError = 'Ingresa el nombre del titular como figura en el plástico.';
+      } else if (!/^\d{2}\/\d{2}$/.test(cleanExp)) {
+        isCardValid = false;
+        cardError = 'La fecha de vencimiento debe tener el formato MM/AA (ej. 12/28).';
+      } else if (cleanCvv.length !== expectedCvvLen) {
+        isCardValid = false;
+        cardError = isAmexCard
+          ? `El código de seguridad CID para American Express debe tener exactamente 4 dígitos (tienes ${cleanCvv.length}).`
+          : `El código de seguridad CVV debe tener exactamente 3 dígitos (tienes ${cleanCvv.length}).`;
+      }
+
       const last4 = cleanNum.slice(-4) || '••••';
       detallesPago = {
-        marca: cardBrand === 'amex' ? 'AMERICAN EXPRESS' : cardBrand.toUpperCase(),
+        marca: cardBrand === 'amex' ? 'AMERICAN EXPRESS' : (cardBrand === 'generic' ? 'TARJETA BANCARIA' : cardBrand.toUpperCase()),
         ultimos4: last4,
         titular: cardHolder || 'NO ESPECIFICADO'
       };
@@ -125,11 +188,13 @@ export default function PaymentGateway() {
     const payload = {
       metodoPago: selectedMethod === 'MERCADO_PAGO' ? walletType : selectedMethod,
       detallesPago: JSON.stringify(detallesPago),
-      referenciaPago
+      referenciaPago,
+      isCardValid,
+      cardError
     };
 
     window.dispatchEvent(new CustomEvent('payment-method-changed', { detail: payload }));
-  }, [selectedMethod, cardNumber, cardHolder, cardBrand, walletType, oxxoRef]);
+  }, [selectedMethod, cardNumber, cardHolder, cardBrand, walletType, oxxoRef, cardExpiry, cardCvv]);
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text.replace(/\s+/g, ''));
@@ -241,7 +306,7 @@ export default function PaymentGateway() {
                   placeholder={cardBrand === 'amex' ? '3782 822468 98210' : '4152 7890 1234 9812'}
                   value={cardNumber}
                   onChange={handleCardNumberChange}
-                  maxLength={19}
+                  maxLength={cardBrand === 'amex' ? 17 : 19}
                   inputMode="numeric"
                 />
                 <span className="field-icon-brand">{getBrandDisplayName(cardBrand)}</span>
@@ -256,7 +321,7 @@ export default function PaymentGateway() {
                 className="gateway-input"
                 placeholder="JUAN PEREZ GARCIA"
                 value={cardHolder}
-                onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
+                onChange={handleCardHolderChange}
               />
             </div>
 
@@ -284,10 +349,10 @@ export default function PaymentGateway() {
                 className="gateway-input"
                 placeholder={cardBrand === 'amex' ? '1234' : '123'}
                 value={cardCvv}
-                onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                onChange={handleCvvChange}
                 onFocus={() => setIsFlipped(true)}
                 onBlur={() => setIsFlipped(false)}
-                maxLength={4}
+                maxLength={maxCvvDigits}
                 inputMode="numeric"
               />
             </div>

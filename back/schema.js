@@ -134,12 +134,6 @@ export const typeDefs = `#graphql
     referenciaPago: String
   }
 
-  """Respuesta de autenticacion con token Bearer y datos del usuario"""
-  type AuthPayload {
-    token: String!
-    usuario: Usuario!
-  }
-  
   """Indicadores principales del panel administrativo"""
   type AdminKPIs {
     ventasTotales: Float!
@@ -161,6 +155,7 @@ export const typeDefs = `#graphql
   type Query {
     """Obtiene los indicadores principales del panel administrativo"""
     adminKPIs: AdminKPIs!
+
     """Obtiene libros con filtros opcionales de categoria, busqueda y paginacion"""
     productos(categoriaId: ID, busqueda: String, limite: Int, desde: Int): [Producto!]!
 

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "node ./node_modules/astro/bin/astro.mjs build",
+    "build": "astro build",
     "preview": "astro preview"
   },
   "dependencies": {
@@ -17,7 +17,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
-    "astro": "^7.3.5",
     "vite": "^5.4.2"
   }
 }
