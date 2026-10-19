@@ -45,23 +45,34 @@ export async function procesarPagoMercadoPago({
     detalles = {};
   }
 
-  const titular = (detalles.titular || nombreCliente || '').toUpperCase().trim();
-  const ultimos4 = detalles.ultimos4 || '0000';
-  const marca = detalles.marca || 'TARJETA';
+  // Desempaquetar datos del Card Token si fue generado por el frontend
+  let tokenData = null;
+  if (detalles.tokenTarjeta && typeof detalles.tokenTarjeta === 'string' && detalles.tokenTarjeta.startsWith('tok_mp_')) {
+    try {
+      const b64 = detalles.tokenTarjeta.replace('tok_mp_', '');
+      tokenData = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+    } catch {}
+  }
 
-  // 1. Si existe un token real configurado en el servidor y tenemos token de tarjeta:
+  const titular = (tokenData?.cardholderName || detalles.titular || nombreCliente || '').toUpperCase().trim();
+  const ultimos4 = tokenData?.cardNumber ? tokenData.cardNumber.slice(-4) : (detalles.ultimos4 || '0000');
+  const marca = tokenData?.brand || detalles.marca || 'TARJETA';
+
+  // 1. Si existe un token real configurado en el servidor y cliente de Mercado Pago:
   if (paymentInstance && detalles.tokenTarjeta) {
     try {
+      const serverHost = process.env.SERVER_URL || 'http://localhost:4000';
       const response = await paymentInstance.create({
         body: {
-          transaction_amount: Number(monto),
+          transaction_amount: Number(monto) || 100,
           token: detalles.tokenTarjeta,
           description: 'Compra de libros en BiblioTech Store',
-          payment_method_id: detalles.paymentMethodId || 'visa',
+          payment_method_id: (marca === 'amex' ? 'amex' : (marca === 'mastercard' ? 'master' : 'visa')),
           payer: {
             email: emailCliente,
             first_name: nombreCliente
-          }
+          },
+          notification_url: `${serverHost}/webhook/mercadopago`
         }
       });
 

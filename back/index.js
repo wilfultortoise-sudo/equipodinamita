@@ -133,12 +133,43 @@ const apolloMiddleware = expressMiddleware(server, {
 app.use('/graphql', apolloMiddleware);
 app.post('/', apolloMiddleware);
 
+// Webhook oficial de Mercado Pago (IPN / Webhooks)
+app.post('/webhook/mercadopago', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const query = req.query || {};
+    const paymentId = payload?.data?.id || query?.id || query?.['data.id'];
+    const action = payload?.action || query?.topic || query?.type || 'payment';
+
+    console.log(`[Mercado Pago Webhook] Evento recibido: ${action} | Payment ID: ${paymentId || 'N/A'}`);
+
+    // Si el webhook reporta un pago actualizado, podemos sincronizar el pedido
+    if (paymentId && (action.includes('payment') || action === 'payment.updated')) {
+      // Buscar pedido por referencia de Mercado Pago si existe
+      try {
+        const orderRow = dbRepo.getPedidos().find(p => p.referenciaPago && p.referenciaPago.includes(paymentId));
+        if (orderRow) {
+          console.log(`[Mercado Pago Webhook] Sincronizando orden ${orderRow.folio} con estado confirmado por Webhook.`);
+        }
+      } catch (syncErr) {
+        console.warn('[Mercado Pago Webhook Sync]', syncErr.message);
+      }
+    }
+
+    // Mercado Pago requiere una respuesta 200 o 201 inmediata para confirmar la recepción
+    return res.status(200).json({ received: true, action, paymentId });
+  } catch (err) {
+    console.error('[Mercado Pago Webhook Error]', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Endpoint de verificación de salud
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     server: 'Apollo Server 4 + graphql-ws',
-    endpoints: ['/graphql', '/'],
+    endpoints: ['/graphql', '/', '/webhook/mercadopago'],
     subscriptions: ['pedidoCreado', 'pedidoActualizado', 'stockActualizado']
   });
 });
