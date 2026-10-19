@@ -28,8 +28,8 @@ const MP_TEST_CARDS = [
 ];
 
 export default function PaymentGateway() {
-  // Pestañas independientes: TARJETA_CREDITO (tarjeta bancaria directa) y MERCADO_PAGO (pasarela con card token y webhook)
-  const [selectedMethod, setSelectedMethod] = useState('TARJETA_CREDITO');
+  // Pestañas independientes: MERCADO_PAGO (pasarela con card token y webhook) y TARJETA_CREDITO (tarjeta bancaria directa)
+  const [selectedMethod, setSelectedMethod] = useState('MERCADO_PAGO');
   const [cardSubtype, setCardSubtype] = useState('TARJETA_CREDITO'); // TARJETA_CREDITO o TARJETA_DEBITO
   
   // Estados para Tarjeta (Mercado Pago Custom Checkout)

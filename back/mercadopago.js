@@ -184,6 +184,78 @@ export const TABLA_PRUEBAS_MERCADO_PAGO = {
 };
 
 /**
+ * Detecta de forma exhaustiva cuál de los 17 escenarios oficiales aplica,
+ * evaluando tanto el código de 4 letras como frases en español o inglés.
+ */
+export function detectarEscenarioMercadoPago(titularRaw) {
+  if (!titularRaw) return null;
+  const t = titularRaw.toString().toUpperCase().trim();
+
+  // 1. Mapeo por token exacto aislado
+  const tokens = t.split(/[\s,._-]+/);
+  for (const token of tokens) {
+    if (TABLA_PRUEBAS_MERCADO_PAGO[token]) {
+      return TABLA_PRUEBAS_MERCADO_PAGO[token];
+    }
+  }
+
+  // 2. Mapeo exhaustivo por palabras clave y descripciones oficiales
+  if (t === 'APRO' || t.includes('APROB') || t.includes('APPROVED')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.APRO;
+  }
+  if (t.includes('OTHE') || t.includes('OTHER') || t.includes('ERROR GENERAL') || t.includes('FALLO GENERAL') || t.includes('GENERAL ERROR')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.OTHE;
+  }
+  if (t.includes('CONT') || t.includes('PENDIENTE') || t.includes('PENDING') || t.includes('CONTINGEN')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.CONT;
+  }
+  if (t.includes('CALL') || t.includes('AUTORIZ') || t.includes('LLAMAR') || t.includes('BANCO') || t.includes('VALIDACION PARA AUTORIZAR')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.CALL;
+  }
+  if (t.includes('FUND') || t.includes('FONDO') || t.includes('INSUFICIENTE') || t.includes('INSUFICIENT') || t.includes('SIN SALDO')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.FUND;
+  }
+  if (t.includes('SECU') || t.includes('CVV') || t.includes('CID') || t.includes('CVC') || t.includes('SECURITY') || t.includes('CODIGO INVALIDO') || t.includes('CODIGO DE SEGURIDAD')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.SECU;
+  }
+  if (t.includes('EXPI') || t.includes('VENCID') || t.includes('EXPIR') || t.includes('VENCIMIENTO') || t.includes('FECHA')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.EXPI;
+  }
+  if (t.includes('FORM') || t.includes('FORMULARIO') || t.includes('ERROR DE FORMULARIO') || t.includes('ERROR FORMULARIO')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.FORM;
+  }
+  if (t.includes('CARD') || t.includes('NUMERO DE TARJETA') || t.includes('TARJETA INVALIDA') || t.includes('TARJETA FALTANTE')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.CARD;
+  }
+  if (t.includes('INST') || t.includes('CUOTA') || t.includes('INSTALLMENT')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.INST;
+  }
+  if (t.includes('DUPL') || t.includes('DUPLICAD') || t.includes('DUPLICATE')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.DUPL;
+  }
+  if (t.includes('LOCK') || t.includes('BLOQUEAD') || t.includes('DESHABILITAD') || t.includes('DISABLED')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.LOCK;
+  }
+  if (t.includes('CTNA') || t.includes('TIPO NO PERMITIDO') || t.includes('TIPO DE TARJETA') || t.includes('NOT ALLOWED')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.CTNA;
+  }
+  if (t.includes('ATTE') || t.includes('INTENTO') || t.includes('ATTEMPT') || t.includes('PIN')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.ATTE;
+  }
+  if (t.includes('BLAC') || t.includes('LISTA NEGRA') || t.includes('BLACKLIST') || t.includes('FRAUDE') || t.includes('FRAUD')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.BLAC;
+  }
+  if (t.includes('UNSU') || t.includes('NO SOPORTAD') || t.includes('UNSUPPORTED') || t.includes('OPERACION NO SOPORTADA')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.UNSU;
+  }
+  if (t.includes('TEST') || t.includes('REGLAS DE MONTO') || t.includes('MONTO DE PRUEBA') || t.includes('AMOUNT RULES')) {
+    return TABLA_PRUEBAS_MERCADO_PAGO.TEST;
+  }
+
+  return null;
+}
+
+/**
  * Procesa el pago a través de Mercado Pago Checkout API (API real con SDK si hay token,
  * o el motor oficial Sandbox con los 17 escenarios oficiales).
  */
@@ -210,7 +282,15 @@ export async function procesarPagoMercadoPago({
     } catch {}
   }
 
-  const titular = (tokenData?.cardholderName || detalles.titular || nombreCliente || '').toUpperCase().trim();
+  // Concatenar fuentes posibles del nombre del titular ingresado en la pasarela
+  const textoParaEvaluar = [
+    tokenData?.cardholderName,
+    detalles.titular,
+    detalles.cardHolder,
+    detalles.nombreTitular,
+    nombreCliente
+  ].filter(Boolean).join(' ');
+
   const ultimos4 = tokenData?.cardNumber ? tokenData.cardNumber.slice(-4) : (detalles.ultimos4 || '0000');
   const marca = tokenData?.brand || detalles.marca || 'TARJETA';
 
@@ -263,46 +343,8 @@ export async function procesarPagoMercadoPago({
   }
 
   // 2. Motor Oficial de Evaluación de los 17 Escenarios de Checkout API
-  // Extrae y busca la palabra clave oficial de la tabla de Developers:
-  const palabras = titular.split(/[\s,.-]+/);
-  let matchedScenario = null;
+  const matchedScenario = detectarEscenarioMercadoPago(textoParaEvaluar);
 
-  // Búsqueda por token de palabra exacta (ej. "FUND", "CALL", "APRO")
-  for (const palabra of palabras) {
-    if (TABLA_PRUEBAS_MERCADO_PAGO[palabra]) {
-      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO[palabra];
-      break;
-    }
-  }
-
-  // Búsqueda por inclusión de subcadena si no se encontró exacta
-  if (!matchedScenario) {
-    for (const [clave, escenario] of Object.entries(TABLA_PRUEBAS_MERCADO_PAGO)) {
-      if (titular.includes(clave)) {
-        matchedScenario = escenario;
-        break;
-      }
-    }
-  }
-
-  // Aliases frecuentes para facilidad de prueba
-  if (!matchedScenario) {
-    if (titular.includes('FONDOS') || titular.includes('INSUFICIENT')) {
-      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO.FUND;
-    } else if (titular.includes('AUTORIZ') || titular.includes('LLAMAR') || titular.includes('BANCO')) {
-      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO.CALL;
-    } else if (titular.includes('BLOQUEAD') || titular.includes('DESHABILITAD')) {
-      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO.LOCK;
-    } else if (titular.includes('VENCID')) {
-      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO.EXPI;
-    } else if (titular.includes('DUPLICAD')) {
-      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO.DUPL;
-    } else if (titular.includes('FRAUDE') || titular.includes('BLACKLIST')) {
-      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO.BLAC;
-    }
-  }
-
-  // Si coincide con alguno de los escenarios definidos:
   if (matchedScenario) {
     const txId = `MP-${matchedScenario.clave}-${Date.now().toString(36).toUpperCase()}`;
     return {
