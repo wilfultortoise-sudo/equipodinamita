@@ -79,7 +79,7 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
 
             <!-- Botón de Envío -->
             <button type="submit" id="submit-order-btn" class="btn btn-primary btn-block btn-lg">
-              <span id="submit-btn-label">Confirmar y Pagar Orden</span>
+              <span id="submit-btn-label">Pagar con Tarjeta (Mercado Pago API)</span>
             </button>
           </form>
         </div>
@@ -537,12 +537,10 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
             submitBtnLabel.textContent = 'Generar Ficha OXXO Pay';
           } else if (currentPaymentInfo.metodoPago === 'TRANSFERENCIA_SPEI') {
             submitBtnLabel.textContent = 'Confirmar Orden con SPEI';
-          } else if (currentPaymentInfo.metodoPago === 'MERCADO_PAGO') {
-            submitBtnLabel.textContent = 'Pagar con Mercado Pago';
           } else if (currentPaymentInfo.metodoPago === 'PAYPAL') {
             submitBtnLabel.textContent = 'Pagar con PayPal';
           } else {
-            submitBtnLabel.textContent = 'Confirmar y Pagar Orden';
+            submitBtnLabel.textContent = 'Pagar con Tarjeta (Mercado Pago API)';
           }
         }
       }

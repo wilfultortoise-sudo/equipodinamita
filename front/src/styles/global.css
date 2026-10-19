@@ -369,6 +369,98 @@ a {
   color: var(--color-text);
 }
 
+/* Header de Mercado Pago */
+.mp-panel-badge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: var(--spacing-md);
+  padding: 0.75rem 1rem;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius-md);
+}
+
+.mp-badge-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-brand-logo {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0369a1;
+}
+
+.mp-subtitle {
+  font-size: 0.78rem;
+  color: #0c4a6e;
+}
+
+.mp-features {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.feature-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0369a1;
+  background: #e0f2fe;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid #7dd3fc;
+}
+
+.req-star {
+  color: #ef4444;
+}
+
+/* Indicador de Tokenización */
+.token-status-box {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.token-status-box.token-pending {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+
+.token-status-box.token-ready {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+}
+
+.token-info-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.82rem;
+}
+
+.token-string {
+  font-family: monospace;
+  font-weight: 700;
+  color: #166534;
+  margin: 0.2rem 0;
+  background: #dcfce7;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 0.78rem;
+}
+
+.token-sub {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
 /* Tarjeta Virtual Animada */
 .virtual-card-wrapper {
   perspective: 1000px;
