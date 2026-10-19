@@ -539,8 +539,10 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
             submitBtnLabel.textContent = 'Confirmar Orden con SPEI';
           } else if (currentPaymentInfo.metodoPago === 'PAYPAL') {
             submitBtnLabel.textContent = 'Pagar con PayPal';
+          } else if (currentPaymentInfo.metodoPago === 'MERCADO_PAGO') {
+            submitBtnLabel.textContent = 'Pagar con Mercado Pago (Card Token)';
           } else {
-            submitBtnLabel.textContent = 'Pagar con Tarjeta (Mercado Pago API)';
+            submitBtnLabel.textContent = 'Pagar con Tarjeta Bancaria';
           }
         }
       }
@@ -601,10 +603,14 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
           return;
         }
 
-        // Si el método es tarjeta, validar que los datos sean correctos (incluyendo Amex 15 dígitos y CID)
-        if (currentPaymentInfo.metodoPago === 'TARJETA_CREDITO' || currentPaymentInfo.metodoPago === 'TARJETA_DEBITO') {
+        // Si el método es tarjeta bancaria o pasarela Mercado Pago, validar que los datos sean correctos (incluyendo Amex 15 dígitos y CID)
+        if (
+          currentPaymentInfo.metodoPago === 'TARJETA_CREDITO' ||
+          currentPaymentInfo.metodoPago === 'TARJETA_DEBITO' ||
+          currentPaymentInfo.metodoPago === 'MERCADO_PAGO'
+        ) {
           if (currentPaymentInfo.isCardValid === false) {
-            const msg = currentPaymentInfo.cardError || 'Por favor completa los datos de la tarjeta bancaria correctamente.';
+            const msg = currentPaymentInfo.cardError || 'Por favor completa los datos de la tarjeta correctamente.';
             if (errorAlert) {
               errorAlert.textContent = msg;
               errorAlert.style.display = 'block';

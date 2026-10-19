@@ -329,9 +329,21 @@ a {
 /* Pesta├▒as de Pago */
 .gateway-tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0.5rem;
   margin-bottom: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+  .gateway-tabs {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .gateway-tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .gateway-tab {
@@ -381,6 +393,64 @@ a {
   background: #f0f9ff;
   border: 1px solid #bae6fd;
   border-radius: var(--radius-md);
+}
+
+/* Header de Tarjeta Bancaria Directa */
+.bank-card-badge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: var(--spacing-md);
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+}
+
+.bank-brand-logo {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.feature-pill.bank-pill {
+  color: #334155;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.mp-sandbox-notice {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  color: #1e40af;
+  line-height: 1.45;
+}
+
+.mp-sandbox-notice code {
+  background: #dbeafe;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.bank-secure-note {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .mp-badge-title {

@@ -180,12 +180,8 @@ export const resolvers = {
         if (!datos.emailCliente) datos.emailCliente = context.currentUser.email;
       }
 
-      // Validar pasarela Mercado Pago si el método es tarjeta o Mercado Pago
-      if (
-        datos.metodoPago === 'TARJETA_CREDITO' ||
-        datos.metodoPago === 'TARJETA_DEBITO' ||
-        datos.metodoPago === 'MERCADO_PAGO'
-      ) {
+      // Validar pasarela Mercado Pago exclusivamente cuando el método de pago seleccionado es MERCADO_PAGO
+      if (datos.metodoPago === 'MERCADO_PAGO') {
         const resultadoMP = await procesarPagoMercadoPago({
           metodoPago: datos.metodoPago,
           detallesPago: datos.detallesPago,
