@@ -14,22 +14,178 @@ if (MP_ACCESS_TOKEN) {
       options: { timeout: 7000 }
     });
     paymentInstance = new Payment(mpClient);
-    console.log('[Mercado Pago] SDK oficial inicializado con Access Token configurado.');
+    console.log('[Mercado Pago Checkout API] SDK oficial inicializado con Access Token configurado.');
   } catch (err) {
-    console.warn('[Mercado Pago] Advertencia al inicializar SDK:', err.message);
+    console.warn('[Mercado Pago Checkout API] Advertencia al inicializar SDK:', err.message);
   }
 } else {
-  console.log('[Mercado Pago] Modo Sandbox / Test Cards activo (sin token de entorno).');
+  console.log('[Mercado Pago Checkout API] Modo Sandbox / Test Cards activo (17 escenarios oficiales).');
 }
 
 /**
- * Procesa el pago a través de Mercado Pago (API real si hay token, o motor oficial Sandbox de pruebas).
- * Evalúa las respuestas estándar de Mercado Pago:
- * - APRO -> approved (accredited)
- * - FUND -> rejected (cc_rejected_insufficient_amount)
- * - CALL -> rejected (cc_rejected_call_for_authorize)
- * - SECU -> rejected (cc_rejected_bad_filled_security_code)
- * - EXPI -> rejected (cc_rejected_bad_filled_date)
+ * Matriz oficial de los 17 escenarios de prueba de Mercado Pago Checkout API
+ * Documentación oficial: https://www.mercadopago.com.mx/developers/es/docs/your-integrations/test/cards
+ * Basada en la palabra clave ingresada en el "Nombre y apellido del titular":
+ */
+export const TABLA_PRUEBAS_MERCADO_PAGO = {
+  APRO: {
+    clave: 'APRO',
+    aprobado: true,
+    status: 'approved',
+    statusDetail: 'accredited',
+    codigoError: null,
+    titulo: 'Pago aprobado',
+    mensaje: 'Pago aprobado y acreditado exitosamente por Mercado Pago Checkout API.'
+  },
+  OTHE: {
+    clave: 'OTHE',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_other',
+    codigoError: 'cc_rejected_other',
+    titulo: 'Rechazado por error general',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_other]: Rechazado por error general del procesador bancario. Intenta con otra tarjeta.'
+  },
+  CONT: {
+    clave: 'CONT',
+    aprobado: false,
+    status: 'in_process',
+    statusDetail: 'pending_contingency',
+    codigoError: 'pending_contingency',
+    titulo: 'Pendiente de pago',
+    mensaje: 'Pendiente de pago en Mercado Pago [pending_contingency]: El pago está en proceso de revisión por contingencia. Te notificaremos al acreditarse.'
+  },
+  CALL: {
+    clave: 'CALL',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_call_for_authorize',
+    codigoError: 'cc_rejected_call_for_authorize',
+    titulo: 'Rechazado con validación para autorizar',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_call_for_authorize]: Debes llamar a tu banco emisor para autorizar el cargo a BiblioTech Store.'
+  },
+  FUND: {
+    clave: 'FUND',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_insufficient_amount',
+    codigoError: 'cc_rejected_insufficient_amount',
+    titulo: 'Rechazado por importe insuficiente',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_insufficient_amount]: Tu pago fue rechazado por fondos o importe insuficiente en la cuenta.'
+  },
+  SECU: {
+    clave: 'SECU',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_bad_filled_security_code',
+    codigoError: 'cc_rejected_bad_filled_security_code',
+    titulo: 'Rechazado por código de seguridad inválido',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_bad_filled_security_code]: El código de seguridad ingresado (CVV/CID) es incorrecto.'
+  },
+  EXPI: {
+    clave: 'EXPI',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_bad_filled_date',
+    codigoError: 'cc_rejected_bad_filled_date',
+    titulo: 'Rechazado debido a un problema de fecha de vencimiento',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_bad_filled_date]: La tarjeta se encuentra vencida o la fecha ingresada es inválida.'
+  },
+  FORM: {
+    clave: 'FORM',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_bad_filled_other',
+    codigoError: 'cc_rejected_bad_filled_other',
+    titulo: 'Rechazado debido a un error de formulario',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_bad_filled_other]: Error en los datos proporcionados en el formulario de la tarjeta.'
+  },
+  CARD: {
+    clave: 'CARD',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_bad_filled_card_number',
+    codigoError: 'cc_rejected_bad_filled_card_number',
+    titulo: 'Rechazado por número de tarjeta faltante o inválido',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_bad_filled_card_number]: El número de tarjeta proporcionado no es válido o está incompleto.'
+  },
+  INST: {
+    clave: 'INST',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_invalid_installments',
+    codigoError: 'cc_rejected_invalid_installments',
+    titulo: 'Rechazado por cuotas no válidas',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_invalid_installments]: La tarjeta no procesa pagos en las cuotas seleccionadas.'
+  },
+  DUPL: {
+    clave: 'DUPL',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_duplicated_payment',
+    codigoError: 'cc_rejected_duplicated_payment',
+    titulo: 'Rechazado por pago duplicado',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_duplicated_payment]: Ya realizaste un pago idéntico recientemente. Se previene cobro duplicado.'
+  },
+  LOCK: {
+    clave: 'LOCK',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_card_disabled',
+    codigoError: 'cc_rejected_card_disabled',
+    titulo: 'Rechazado por tarjeta deshabilitada o bloqueada',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_card_disabled]: La tarjeta se encuentra deshabilitada o bloqueada por la entidad financiera.'
+  },
+  CTNA: {
+    clave: 'CTNA',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_card_type_not_allowed',
+    codigoError: 'cc_rejected_card_type_not_allowed',
+    titulo: 'Rechazado por tipo de tarjeta no permitido',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_card_type_not_allowed]: El tipo de tarjeta utilizado no está permitido para este tipo de cobro.'
+  },
+  ATTE: {
+    clave: 'ATTE',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_max_attempts',
+    codigoError: 'cc_rejected_max_attempts',
+    titulo: 'Rechazado por superar los intentos de PIN',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_max_attempts]: Has superado el número máximo de intentos permitidos con esta tarjeta.'
+  },
+  BLAC: {
+    clave: 'BLAC',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_blacklist',
+    codigoError: 'cc_rejected_blacklist',
+    titulo: 'Rechazado por estar en lista negra / prevención de fraude',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_blacklist]: Pago rechazado por los sistemas de prevención de fraude de Mercado Pago.'
+  },
+  UNSU: {
+    clave: 'UNSU',
+    aprobado: false,
+    status: 'rejected',
+    statusDetail: 'cc_rejected_unsupported_operation',
+    codigoError: 'cc_rejected_unsupported_operation',
+    titulo: 'Operación no soportada',
+    mensaje: 'Rechazado por Mercado Pago [cc_rejected_unsupported_operation]: La operación no es soportada para este medio de pago.'
+  },
+  TEST: {
+    clave: 'TEST',
+    aprobado: false,
+    status: 'in_process',
+    statusDetail: 'pending_review_manual',
+    codigoError: 'pending_review_manual',
+    titulo: 'Utilizado para aplicar reglas de montos de prueba',
+    mensaje: 'En revisión por Mercado Pago [pending_review_manual]: Pago en proceso sujeto a reglas de validación de montos de prueba.'
+  }
+};
+
+/**
+ * Procesa el pago a través de Mercado Pago Checkout API (API real con SDK si hay token,
+ * o el motor oficial Sandbox con los 17 escenarios oficiales).
  */
 export async function procesarPagoMercadoPago({
   monto,
@@ -45,7 +201,7 @@ export async function procesarPagoMercadoPago({
     detalles = {};
   }
 
-  // Desempaquetar datos del Card Token si fue generado por el frontend
+  // Desempaquetar datos del Card Token generado por Checkout API en el cliente
   let tokenData = null;
   if (detalles.tokenTarjeta && typeof detalles.tokenTarjeta === 'string' && detalles.tokenTarjeta.startsWith('tok_mp_')) {
     try {
@@ -58,7 +214,7 @@ export async function procesarPagoMercadoPago({
   const ultimos4 = tokenData?.cardNumber ? tokenData.cardNumber.slice(-4) : (detalles.ultimos4 || '0000');
   const marca = tokenData?.brand || detalles.marca || 'TARJETA';
 
-  // 1. Si existe un token real configurado en el servidor y cliente de Mercado Pago:
+  // 1. Si existe un Access Token real configurado en el servidor y cliente de Mercado Pago:
   if (paymentInstance && detalles.tokenTarjeta) {
     try {
       const serverHost = process.env.SERVER_URL || 'http://localhost:4000';
@@ -66,7 +222,7 @@ export async function procesarPagoMercadoPago({
         body: {
           transaction_amount: Number(monto) || 100,
           token: detalles.tokenTarjeta,
-          description: 'Compra de libros en BiblioTech Store',
+          description: 'Compra de libros en BiblioTech Store (Checkout API)',
           payment_method_id: (marca === 'amex' ? 'amex' : (marca === 'mastercard' ? 'master' : 'visa')),
           payer: {
             email: emailCliente,
@@ -82,7 +238,7 @@ export async function procesarPagoMercadoPago({
           status: response.status,
           statusDetail: response.status_detail,
           idTransaccion: `MP-${response.id}`,
-          mensaje: 'Pago aprobado y acreditado por Mercado Pago.'
+          mensaje: 'Pago aprobado y acreditado por Mercado Pago Checkout API.'
         };
       } else {
         const errorDesc = mapearMensajeMercadoPago(response.status_detail);
@@ -96,7 +252,6 @@ export async function procesarPagoMercadoPago({
       }
     } catch (apiError) {
       console.error('[Mercado Pago API Error]', apiError.message);
-      // Si la API externa arroja error de validación bancaria
       const detail = apiError.cause?.[0]?.code || 'cc_rejected_other';
       return {
         aprobado: false,
@@ -107,72 +262,67 @@ export async function procesarPagoMercadoPago({
     }
   }
 
-  // 2. Motor de Validación Oficial de Mercado Pago Sandbox / Test Cards
-  // Aplica exactamente la matriz de decisión y códigos de rechazo de la documentación oficial de MP:
+  // 2. Motor Oficial de Evaluación de los 17 Escenarios de Checkout API
+  // Extrae y busca la palabra clave oficial de la tabla de Developers:
+  const palabras = titular.split(/[\s,.-]+/);
+  let matchedScenario = null;
 
-  // Caso: Falta de fondos en la cuenta / tarjeta
-  if (titular.includes('FUND') || titular.includes('FONDOS') || titular.includes('INSUFICIENT')) {
+  // Búsqueda por token de palabra exacta (ej. "FUND", "CALL", "APRO")
+  for (const palabra of palabras) {
+    if (TABLA_PRUEBAS_MERCADO_PAGO[palabra]) {
+      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO[palabra];
+      break;
+    }
+  }
+
+  // Búsqueda por inclusión de subcadena si no se encontró exacta
+  if (!matchedScenario) {
+    for (const [clave, escenario] of Object.entries(TABLA_PRUEBAS_MERCADO_PAGO)) {
+      if (titular.includes(clave)) {
+        matchedScenario = escenario;
+        break;
+      }
+    }
+  }
+
+  // Aliases frecuentes para facilidad de prueba
+  if (!matchedScenario) {
+    if (titular.includes('FONDOS') || titular.includes('INSUFICIENT')) {
+      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO.FUND;
+    } else if (titular.includes('AUTORIZ') || titular.includes('LLAMAR') || titular.includes('BANCO')) {
+      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO.CALL;
+    } else if (titular.includes('BLOQUEAD') || titular.includes('DESHABILITAD')) {
+      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO.LOCK;
+    } else if (titular.includes('VENCID')) {
+      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO.EXPI;
+    } else if (titular.includes('DUPLICAD')) {
+      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO.DUPL;
+    } else if (titular.includes('FRAUDE') || titular.includes('BLACKLIST')) {
+      matchedScenario = TABLA_PRUEBAS_MERCADO_PAGO.BLAC;
+    }
+  }
+
+  // Si coincide con alguno de los escenarios definidos:
+  if (matchedScenario) {
+    const txId = `MP-${matchedScenario.clave}-${Date.now().toString(36).toUpperCase()}`;
     return {
-      aprobado: false,
-      status: 'rejected',
-      statusDetail: 'cc_rejected_insufficient_amount',
-      codigoError: 'cc_rejected_insufficient_amount',
-      mensaje: 'Rechazado por Mercado Pago [cc_rejected_insufficient_amount]: Tu pago fue rechazado por fondos insuficientes en la cuenta. Por favor utiliza otra tarjeta con saldo disponible.'
+      aprobado: matchedScenario.aprobado,
+      status: matchedScenario.status,
+      statusDetail: matchedScenario.statusDetail,
+      codigoError: matchedScenario.codigoError,
+      idTransaccion: txId,
+      mensaje: matchedScenario.mensaje
     };
   }
 
-  // Caso: Rechazo bancario - Requiere llamada de autorización al banco
-  if (titular.includes('CALL') || titular.includes('BANCO') || titular.includes('AUTORIZ') || titular.includes('LLAMAR')) {
-    return {
-      aprobado: false,
-      status: 'rejected',
-      statusDetail: 'cc_rejected_call_for_authorize',
-      codigoError: 'cc_rejected_call_for_authorize',
-      mensaje: 'Rechazado por Mercado Pago [cc_rejected_call_for_authorize]: El banco emisor requiere autorización telefónica previa para procesar este cargo. Llama a tu banco para autorizar la compra a BiblioTech Store o selecciona otro método.'
-    };
-  }
-
-  // Caso: Código de seguridad incorrecto
-  if (titular.includes('SECU') || titular.includes('CVV') || titular.includes('SECURITY')) {
-    return {
-      aprobado: false,
-      status: 'rejected',
-      statusDetail: 'cc_rejected_bad_filled_security_code',
-      codigoError: 'cc_rejected_bad_filled_security_code',
-      mensaje: 'Rechazado por Mercado Pago [cc_rejected_bad_filled_security_code]: El código de seguridad ingresado (CVV/CID) es incorrecto. Verifica el reverso del plástico.'
-    };
-  }
-
-  // Caso: Tarjeta vencida o fecha inválida
-  if (titular.includes('EXPI') || titular.includes('VENCID')) {
-    return {
-      aprobado: false,
-      status: 'rejected',
-      statusDetail: 'cc_rejected_bad_filled_date',
-      codigoError: 'cc_rejected_bad_filled_date',
-      mensaje: 'Rechazado por Mercado Pago [cc_rejected_bad_filled_date]: La fecha de vencimiento es inválida o la tarjeta se encuentra vencida.'
-    };
-  }
-
-  // Caso: Error general de formulario o tarjeta bloqueada
-  if (titular.includes('FORM') || titular.includes('ERROR') || titular.includes('BLOCK')) {
-    return {
-      aprobado: false,
-      status: 'rejected',
-      statusDetail: 'cc_rejected_other',
-      codigoError: 'cc_rejected_other',
-      mensaje: 'Rechazado por Mercado Pago [cc_rejected_other]: La tarjeta no pudo ser procesada. Consulta con tu institución financiera.'
-    };
-  }
-
-  // Caso Exitoso (APRO o cliente regular sin disparador de fallo)
-  const txId = `MP-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  // Caso por defecto para clientes regulares (nombre normal sin código de rechazo):
+  const defaultTxId = `MP-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
   return {
     aprobado: true,
     status: 'approved',
     statusDetail: 'accredited',
-    idTransaccion: txId,
-    mensaje: `Pago procesado y aprobado exitosamente por la pasarela de Mercado Pago (${marca} terminación ${ultimos4}).`
+    idTransaccion: defaultTxId,
+    mensaje: `Pago procesado y aprobado exitosamente por Mercado Pago Checkout API (${marca} terminación ${ultimos4}).`
   };
 }
 
@@ -180,17 +330,16 @@ export async function procesarPagoMercadoPago({
  * Mapea los códigos oficiales de respuesta de Mercado Pago a mensajes legibles en español.
  */
 function mapearMensajeMercadoPago(statusDetail, defaultMsg = '') {
-  const mapaErrores = {
-    'cc_rejected_insufficient_amount': 'Rechazado por Mercado Pago [cc_rejected_insufficient_amount]: Tu pago fue rechazado por fondos insuficientes en la cuenta.',
-    'cc_rejected_call_for_authorize': 'Rechazado por Mercado Pago [cc_rejected_call_for_authorize]: El banco emisor requiere autorización previa. Debes llamar a tu banco para autorizar la compra.',
-    'cc_rejected_bad_filled_security_code': 'Rechazado por Mercado Pago [cc_rejected_bad_filled_security_code]: Código de seguridad (CVV) incorrecto.',
-    'cc_rejected_bad_filled_date': 'Rechazado por Mercado Pago [cc_rejected_bad_filled_date]: Fecha de vencimiento inválida o expirada.',
-    'cc_rejected_bad_filled_other': 'Rechazado por Mercado Pago [cc_rejected_bad_filled_other]: Error en los datos proporcionados de la tarjeta.',
-    'cc_rejected_card_disabled': 'Rechazado por Mercado Pago [cc_rejected_card_disabled]: La tarjeta no está habilitada. Comunícate con tu banco.',
+  for (const item of Object.values(TABLA_PRUEBAS_MERCADO_PAGO)) {
+    if (item.statusDetail === statusDetail) {
+      return item.mensaje;
+    }
+  }
+
+  const mapaAdicional = {
     'cc_rejected_high_risk': 'Rechazado por Mercado Pago [cc_rejected_high_risk]: Pago rechazado por políticas de prevención de fraude.',
-    'cc_rejected_max_attempts': 'Rechazado por Mercado Pago [cc_rejected_max_attempts]: Llegaste al límite de intentos permitidos.',
     'cc_rejected_other': 'Rechazado por Mercado Pago [cc_rejected_other]: No se pudo procesar el pago con la tarjeta bancaria.'
   };
 
-  return mapaErrores[statusDetail] || defaultMsg || `Pago no procesado por la pasarela (${statusDetail || 'Error desconocido'}).`;
+  return mapaAdicional[statusDetail] || defaultMsg || `Pago no procesado por la pasarela (${statusDetail || 'Error desconocido'}).`;
 }

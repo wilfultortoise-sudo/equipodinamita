@@ -1,5 +1,32 @@
 import { useState, useEffect } from 'react';
 
+// 17 Escenarios Oficiales de Prueba de Mercado Pago Checkout API (test/cards)
+const MP_TEST_SCENARIOS = [
+  { code: 'APRO', label: 'Pago Aprobado', desc: 'Acreditado exitosamente' },
+  { code: 'FUND', label: 'Importe Insuficiente', desc: 'cc_rejected_insufficient_amount' },
+  { code: 'CALL', label: 'Validar para Autorizar', desc: 'cc_rejected_call_for_authorize' },
+  { code: 'SECU', label: 'CVV Inválido', desc: 'cc_rejected_bad_filled_security_code' },
+  { code: 'EXPI', label: 'Fecha Vencida', desc: 'cc_rejected_bad_filled_date' },
+  { code: 'FORM', label: 'Error Formulario', desc: 'cc_rejected_bad_filled_other' },
+  { code: 'OTHE', label: 'Error General', desc: 'cc_rejected_other' },
+  { code: 'CONT', label: 'Pendiente Contingencia', desc: 'pending_contingency' },
+  { code: 'CARD', label: 'Tarjeta Inválida', desc: 'cc_rejected_bad_filled_card_number' },
+  { code: 'INST', label: 'Cuotas No Válidas', desc: 'cc_rejected_invalid_installments' },
+  { code: 'DUPL', label: 'Pago Duplicado', desc: 'cc_rejected_duplicated_payment' },
+  { code: 'LOCK', label: 'Tarjeta Bloqueada', desc: 'cc_rejected_card_disabled' },
+  { code: 'CTNA', label: 'Tipo No Permitido', desc: 'cc_rejected_card_type_not_allowed' },
+  { code: 'ATTE', label: 'Superó Intentos PIN', desc: 'cc_rejected_max_attempts' },
+  { code: 'BLAC', label: 'Lista Negra / Fraude', desc: 'cc_rejected_blacklist' },
+  { code: 'UNSU', label: 'No Soportada', desc: 'cc_rejected_unsupported_operation' },
+  { code: 'TEST', label: 'Reglas de Monto', desc: 'pending_review_manual' }
+];
+
+const MP_TEST_CARDS = [
+  { label: 'Visa Prueba', num: '4075 5957 1648 3764', exp: '11/30', cvv: '123' },
+  { label: 'Mastercard Prueba', num: '5474 9254 3267 0366', exp: '11/30', cvv: '123' },
+  { label: 'Amex Prueba', num: '3711 803032 57522', exp: '11/30', cvv: '1234' }
+];
+
 export default function PaymentGateway() {
   // Pestañas independientes: TARJETA_CREDITO (tarjeta bancaria directa) y MERCADO_PAGO (pasarela con card token y webhook)
   const [selectedMethod, setSelectedMethod] = useState('TARJETA_CREDITO');
@@ -240,6 +267,21 @@ export default function PaymentGateway() {
       window.showToast('CLABE copiada al portapapeles', 'success');
     }
     setTimeout(() => setCopiedClabe(false), 2500);
+  };
+
+  const applyTestCard = (card) => {
+    setCardNumber(card.num);
+    setCardExpiry(card.exp);
+    setCardCvv(card.cvv);
+  };
+
+  const applyScenario = (sc) => {
+    setCardHolder(sc.code);
+    if (!cardNumber) {
+      setCardNumber('4075 5957 1648 3764');
+      setCardExpiry('11/30');
+      setCardCvv('123');
+    }
   };
 
   return (
@@ -613,13 +655,48 @@ export default function PaymentGateway() {
             )}
           </div>
 
-          {/* Notificación didáctica para pruebas de rechazo bancario */}
+          {/* Panel Interactivo de los 17 Escenarios Oficiales de Checkout API */}
           <div className="mp-sandbox-notice">
-            💡 <strong>Pruebas de Pasarela Mercado Pago:</strong> Si deseas comprobar las respuestas de rechazo bancario de Mercado Pago, ingresa en el titular:
-            <br />
-            • <code>FUND</code> o <code>FONDOS</code> para simular fondos insuficientes (<code>cc_rejected_insufficient_amount</code>).
-            <br />
-            • <code>CALL</code> o <code>AUTORIZAR</code> para simular llamada de autorización al banco (<code>cc_rejected_call_for_authorize</code>).
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div>
+                <strong>🧪 Checkout API — 17 Escenarios Oficiales de Prueba (test/cards):</strong>
+                <div style={{ fontSize: '0.75rem', color: '#0369a1', marginTop: '0.15rem' }}>
+                  Escribe la palabra clave en <strong>Nombre del Titular</strong> o haz clic en cualquiera de las siguientes para probar la respuesta del procesador:
+                </div>
+              </div>
+            </div>
+
+            <div className="quick-fill-row">
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0c4a6e', alignSelf: 'center' }}>Cargar tarjeta:</span>
+              {MP_TEST_CARDS.map((c) => (
+                <button
+                  key={c.label}
+                  type="button"
+                  className="quick-fill-btn"
+                  onClick={() => applyTestCard(c)}
+                >
+                  💳 {c.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mp-scenarios-grid">
+              {MP_TEST_SCENARIOS.map((sc) => {
+                const isSelected = cardHolder.toUpperCase().includes(sc.code);
+                return (
+                  <button
+                    key={sc.code}
+                    type="button"
+                    className={`mp-scenario-chip ${isSelected ? 'active' : ''}`}
+                    onClick={() => applyScenario(sc)}
+                    title={sc.desc}
+                  >
+                    <span className="chip-code">{sc.code}</span>
+                    <span className="chip-label">{sc.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
