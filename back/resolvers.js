@@ -1,5 +1,6 @@
 import { dbRepo } from './db.js';
 import { pubsub, TOPICS } from './pubsub.js';
+import { procesarPagoMercadoPago } from './mercadopago.js';
 
 // ============================================================
 // PROTECCIÓN DE ROL
@@ -171,12 +172,34 @@ export const resolvers = {
       return dbRepo.eliminarProducto(id);
     },
 
-    crearPedido: (_, { datos }, context) => {
+    crearPedido: async (_, { datos }, context) => {
       // Si hay usuario logueado en el contexto y no venia usuarioId, lo asignamos
       if (context?.currentUser) {
         datos.usuarioId = datos.usuarioId || context.currentUser.id;
         if (!datos.nombreCliente) datos.nombreCliente = context.currentUser.nombre;
         if (!datos.emailCliente) datos.emailCliente = context.currentUser.email;
+      }
+
+      // Validar pasarela Mercado Pago si el método es tarjeta o Mercado Pago
+      if (
+        datos.metodoPago === 'TARJETA_CREDITO' ||
+        datos.metodoPago === 'TARJETA_DEBITO' ||
+        datos.metodoPago === 'MERCADO_PAGO'
+      ) {
+        const resultadoMP = await procesarPagoMercadoPago({
+          metodoPago: datos.metodoPago,
+          detallesPago: datos.detallesPago,
+          emailCliente: datos.emailCliente,
+          nombreCliente: datos.nombreCliente
+        });
+
+        if (!resultadoMP.aprobado) {
+          throw new Error(resultadoMP.mensaje);
+        }
+
+        if (resultadoMP.idTransaccion && !datos.referenciaPago) {
+          datos.referenciaPago = resultadoMP.idTransaccion;
+        }
       }
 
       const nuevoPedido = dbRepo.crearPedido(datos);

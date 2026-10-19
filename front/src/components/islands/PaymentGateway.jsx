@@ -205,6 +205,35 @@ export default function PaymentGateway() {
     setTimeout(() => setCopiedClabe(false), 2500);
   };
 
+  // Cargar escenarios de prueba oficiales de Mercado Pago Sandbox (para evaluación del profesor)
+  const fillTestScenario = (type) => {
+    if (type === 'APRO') {
+      setCardNumber('4152 7890 1234 9812');
+      setCardHolder('APRO');
+      setCardExpiry('12/28');
+      setCardCvv('123');
+      if (window.showToast) window.showToast('Tarjeta de prueba cargada: Aprobado (APRO)', 'success');
+    } else if (type === 'FUND') {
+      setCardNumber('4152 7890 1234 9812');
+      setCardHolder('FUND');
+      setCardExpiry('12/28');
+      setCardCvv('123');
+      if (window.showToast) window.showToast('Tarjeta cargada: Simular Falta de Fondos (FUND)', 'info');
+    } else if (type === 'CALL') {
+      setCardNumber('4152 7890 1234 9812');
+      setCardHolder('CALL');
+      setCardExpiry('12/28');
+      setCardCvv('123');
+      if (window.showToast) window.showToast('Tarjeta cargada: Simular Llamar al Banco (CALL)', 'info');
+    } else if (type === 'SECU') {
+      setCardNumber('4152 7890 1234 9812');
+      setCardHolder('SECU');
+      setCardExpiry('12/28');
+      setCardCvv('999');
+      if (window.showToast) window.showToast('Tarjeta cargada: Simular CVV Inválido (SECU)', 'info');
+    }
+  };
+
   return (
     <div className="payment-gateway-island">
       <div className="gateway-header">
@@ -379,6 +408,48 @@ export default function PaymentGateway() {
               />
               <span>Tarjeta de Débito</span>
             </label>
+          </div>
+
+          {/* Panel de Escenarios Sandbox de Mercado Pago para Evaluación */}
+          <div className="mp-test-scenarios-panel">
+            <div className="test-panel-header">
+              <span className="mp-logo-badge">💙 Mercado Pago API / Sandbox</span>
+              <span className="test-guide-title">Disparadores para pruebas de validación y rechazo bancario:</span>
+            </div>
+            <div className="test-buttons-row">
+              <button
+                type="button"
+                className="test-pill pill-green"
+                onClick={() => fillTestScenario('APRO')}
+                title="Simula un pago exitoso aprobado"
+              >
+                ✓ Aprobado (APRO)
+              </button>
+              <button
+                type="button"
+                className="test-pill pill-red"
+                onClick={() => fillTestScenario('FUND')}
+                title="Simula rechazo por saldo insuficiente"
+              >
+                ✗ Falta de Fondos (FUND)
+              </button>
+              <button
+                type="button"
+                className="test-pill pill-yellow"
+                onClick={() => fillTestScenario('CALL')}
+                title="Simula rechazo bancario que pide llamar al banco"
+              >
+                📞 Llamar al Banco (CALL)
+              </button>
+              <button
+                type="button"
+                className="test-pill pill-purple"
+                onClick={() => fillTestScenario('SECU')}
+                title="Simula rechazo por código CVV incorrecto"
+              >
+                🔒 CVV Inválido (SECU)
+              </button>
+            </div>
           </div>
         </div>
       )}

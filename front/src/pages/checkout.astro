@@ -681,9 +681,14 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
             throw new Error('No se recibió el folio oficial de confirmación del servidor.');
           }
         } catch (err: any) {
+          const errMsg = err.message || 'Error al procesar el pago. Por favor intenta nuevamente.';
           if (errorAlert) {
-            errorAlert.textContent = err.message || 'Error al procesar el pago. Por favor intenta nuevamente.';
+            errorAlert.textContent = errMsg;
             errorAlert.style.display = 'block';
+            errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          if ((window as any).showToast) {
+            (window as any).showToast(errMsg, 'error');
           }
           submitBtn.disabled = false;
           submitBtn.innerHTML = '<span id="submit-btn-label">Confirmar y Pagar Orden</span>';

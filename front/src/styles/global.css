@@ -1,4 +1,4 @@
-﻿/*  Implementaciones
+/*  Implementaciones
 Alan: 
 -Variables CSS para que si queremos cambiar el color azul de la app, modificamos una sola variable  
 -
@@ -585,6 +585,85 @@ a {
   gap: 0.4rem;
   font-size: 0.85rem;
   cursor: pointer;
+}
+
+/* Panel de Pruebas Mercado Pago Sandbox */
+.mp-test-scenarios-panel {
+  margin-top: 1.25rem;
+  padding: 0.85rem 1rem;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius-md);
+}
+
+.test-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.65rem;
+}
+
+.mp-logo-badge {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0369a1;
+  background: #e0f2fe;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid #7dd3fc;
+}
+
+.test-guide-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0c4a6e;
+}
+
+.test-buttons-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.test-pill {
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.test-pill:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.95);
+}
+
+.pill-green {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.pill-red {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.pill-yellow {
+  background: #fef3c7;
+  color: #854d0e;
+  border: 1px solid #fcd34d;
+}
+
+.pill-purple {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #d8b4fe;
 }
 
 /* OXXO Pay */
