@@ -497,7 +497,7 @@ export default function PaymentGateway() {
         <div className="gateway-content card-payment-panel">
           <div className="mp-panel-badge-row">
             <div className="mp-badge-title">
-              <span className="mp-brand-logo">💙 Pasarela Oficial Mercado Pago API</span>
+              <span className="mp-brand-logo"> Pasarela Oficial Mercado Pago API</span>
               <span className="mp-subtitle">Formulario de Tarjeta con Card Token (PCI-DSS) & Webhook</span>
             </div>
             <div className="mp-features">

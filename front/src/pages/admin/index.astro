@@ -7,7 +7,7 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
   <div class="admin-page">
     <div class="container admin-container">
 
-      <!-- Verificación de Seguridad y Rol ADMIN (Bloque B - Parte 3) -->
+      <!-- Verificación de Seguridad y Rol ADMIN (Rutas Protegidas - RP) -->
       <div id="admin-auth-guard" class="card auth-guard-card" style="display: none;">
         <div class="guard-icon">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -15,7 +15,7 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
         <h2 id="guard-title">Acceso Restringido para Administradores</h2>
         <p id="guard-message">Debes iniciar sesión con una cuenta autorizada con rol ADMIN para acceder al Panel de Control.</p>
         <div class="guard-actions">
-          <a href="/login?redirect=/admin" class="btn btn-primary" id="guard-login-btn">Iniciar Sesión</a>
+          <a href="/login?redirect=/admin&role_required=ADMIN" class="btn btn-primary" id="guard-login-btn">Iniciar Sesión como Administrador</a>
           <a href="/" class="btn btn-outline">Volver a la Tienda</a>
         </div>
       </div>
@@ -29,18 +29,29 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
             <div class="admin-badge-row">
               <span class="badge badge-primary">🛡️ Panel Administrativo</span>
               <span id="admin-user-tag" class="admin-user-tag">Admin: ...</span>
+              <span id="ws-status-badge" class="badge ws-pill" style="background:#dcfce7; color:#166534; font-weight:600; border:1px solid #86efac;">🟢 Suscripción GQL Activa</span>
             </div>
-            <h1>Dashboard General</h1>
-            <p class="header-sub">Supervisa el rendimiento de ventas, estado de pedidos e inventario en tiempo real.</p>
+            <h1>Dashboard General & Módulo RP</h1>
+            <p class="header-sub">Supervisa el rendimiento de ventas, reportes ejecutivos (RP) y pedidos en tiempo real con GraphQL Subscriptions.</p>
           </div>
           <div class="header-actions">
+            <a href="/admin/ordenes" class="btn btn-outline" style="border-color:#3b82f6; color:#1d4ed8; font-weight:600;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              Órdenes en Vivo (WS)
+            </a>
             <a href="/admin/productos" class="btn btn-primary">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-              Administrar Catálogo (CRUD)
+              Administrar Catálogo
             </a>
+            <button id="btn-export-csv" class="btn btn-outline btn-sm" title="Descargar Reporte RP consolidado en formato CSV">
+              📥 Exportar RP (CSV)
+            </button>
+            <button id="btn-print-report" class="btn btn-outline btn-sm" title="Imprimir / Exportar PDF de Reporte RP">
+              🖨️ Imprimir RP (PDF)
+            </button>
             <button id="btn-refresh-dashboard" class="btn btn-outline btn-sm">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-              Actualizar Datos
+              Actualizar
             </button>
           </div>
         </div>
@@ -88,6 +99,103 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
               <span class="kpi-label">Ticket Promedio</span>
               <span id="kpi-avg-ticket" class="kpi-val">$0.00 MXN</span>
               <span class="kpi-sub">Promedio por compra</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MÓDULO RP: Reportes Ejecutivos y Métricas de Rendimiento (Backoffice RP) -->
+        <div class="card rp-module-card">
+          <div class="rp-module-header">
+            <div>
+              <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.35rem;">
+                <span class="badge" style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; font-weight:700;">Módulo RP</span>
+                <span class="badge" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;">Reportes & Rutas Protegidas</span>
+              </div>
+              <h2 style="font-size:1.4rem; margin:0 0 0.25rem 0;">Módulo RP — Reportes y Rendimiento de Ventas</h2>
+              <p style="color:var(--color-text-muted); margin:0; font-size:0.88rem;">
+                Consolidado analítico de transacciones, recaudación por pasarelas (Mercado Pago / Tarjetas Bancarias) y cumplimiento operativo.
+              </p>
+            </div>
+            <div class="rp-module-btn-group">
+              <button id="btn-export-csv-alt" class="btn btn-outline btn-sm">
+                📥 Descargar CSV
+              </button>
+              <button id="btn-print-report-alt" class="btn btn-outline btn-sm">
+                🖨️ Imprimir Resumen
+              </button>
+            </div>
+          </div>
+
+          <div class="rp-metrics-grid">
+            <!-- Pasarelas de Pago -->
+            <div class="rp-subcard">
+              <h4 class="rp-subcard-title">💳 Recaudación por Pasarela</h4>
+              <div class="rp-stat-row">
+                <span class="rp-stat-name">Mercado Pago Checkout API:</span>
+                <strong id="rp-mp-total" class="rp-stat-val">$0.00 MXN</strong>
+                <span id="rp-mp-count" class="rp-stat-badge">0 órdenes</span>
+              </div>
+              <div class="rp-stat-row">
+                <span class="rp-stat-name">Tarjeta de Crédito:</span>
+                <strong id="rp-tc-total" class="rp-stat-val">$0.00 MXN</strong>
+                <span id="rp-tc-count" class="rp-stat-badge">0 órdenes</span>
+              </div>
+              <div class="rp-stat-row">
+                <span class="rp-stat-name">Tarjeta de Débito:</span>
+                <strong id="rp-td-total" class="rp-stat-val">$0.00 MXN</strong>
+                <span id="rp-td-count" class="rp-stat-badge">0 órdenes</span>
+              </div>
+              <div class="rp-stat-row">
+                <span class="rp-stat-name">Transferencia / Otros:</span>
+                <strong id="rp-other-total" class="rp-stat-val">$0.00 MXN</strong>
+                <span id="rp-other-count" class="rp-stat-badge">0 órdenes</span>
+              </div>
+            </div>
+
+            <!-- Estatus Logístico -->
+            <div class="rp-subcard">
+              <h4 class="rp-subcard-title">📦 Cumplimiento de Órdenes</h4>
+              <div class="rp-stat-row">
+                <span class="rp-stat-name">Entregados:</span>
+                <strong id="rp-status-delivered" class="rp-stat-val" style="color:#059669;">0</strong>
+                <span id="rp-delivered-pct" class="rp-stat-badge">0%</span>
+              </div>
+              <div class="rp-stat-row">
+                <span class="rp-stat-name">En Camino (Enviados):</span>
+                <strong id="rp-status-shipped" class="rp-stat-val" style="color:#2563eb;">0</strong>
+                <span id="rp-shipped-pct" class="rp-stat-badge">0%</span>
+              </div>
+              <div class="rp-stat-row">
+                <span class="rp-stat-name">En Preparación:</span>
+                <strong id="rp-status-preparing" class="rp-stat-val" style="color:#d97706;">0</strong>
+                <span id="rp-preparing-pct" class="rp-stat-badge">0%</span>
+              </div>
+              <div class="rp-stat-row">
+                <span class="rp-stat-name">Pagados / Nuevos:</span>
+                <strong id="rp-status-paid" class="rp-stat-val" style="color:#7c3aed;">0</strong>
+                <span id="rp-paid-pct" class="rp-stat-badge">0%</span>
+              </div>
+            </div>
+
+            <!-- Indicadores Clave de Reporte (RP) -->
+            <div class="rp-subcard">
+              <h4 class="rp-subcard-title">📊 Resumen Financiero RP</h4>
+              <div class="rp-stat-row">
+                <span class="rp-stat-name">Ingresos Brutos:</span>
+                <strong id="rp-summary-revenue" class="rp-stat-val" style="color:#0f766e;">$0.00 MXN</strong>
+              </div>
+              <div class="rp-stat-row">
+                <span class="rp-stat-name">Unidades Vendidas:</span>
+                <strong id="rp-summary-units" class="rp-stat-val">0 libros</strong>
+              </div>
+              <div class="rp-stat-row">
+                <span class="rp-stat-name">Tasa de Entrega:</span>
+                <strong id="rp-delivery-rate" class="rp-stat-val">0%</strong>
+              </div>
+              <div class="rp-stat-row">
+                <span class="rp-stat-name">Suscripción GQL:</span>
+                <strong style="color:#16a34a;">Activa (WebSocket)</strong>
+              </div>
             </div>
           </div>
         </div>
@@ -329,6 +437,102 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
   .kpi-sub {
     font-size: 0.78rem;
     color: var(--color-text-muted);
+  }
+
+  /* Módulo RP (Reportes & Rutas Protegidas) */
+  .rp-module-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .rp-module-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .rp-module-btn-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .rp-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .rp-subcard {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    padding: 1.15rem 1.25rem;
+  }
+
+  .rp-subcard-title {
+    margin: 0 0 0.85rem 0;
+    font-size: 0.95rem;
+    color: #1e293b;
+    font-weight: 700;
+  }
+
+  .rp-stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.55rem;
+    font-size: 0.86rem;
+    gap: 0.5rem;
+  }
+
+  .rp-stat-name {
+    color: #64748b;
+    flex: 1;
+  }
+
+  .rp-stat-val {
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .rp-stat-badge {
+    background: #e2e8f0;
+    color: #475569;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  @media print {
+    .dashboard-header .header-actions,
+    .quick-access-banner,
+    .filter-bar-card,
+    .admin-nav-link,
+    nav,
+    footer,
+    .btn,
+    .rp-module-btn-group,
+    .table-card {
+      display: none !important;
+    }
+    .admin-page {
+      padding: 0 !important;
+    }
+    .card {
+      box-shadow: none !important;
+      border: 1px solid #ddd !important;
+    }
   }
 
   /* Banner */
@@ -583,6 +787,9 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
   const authGuard = document.getElementById('admin-auth-guard') as HTMLElement;
   const dashboardView = document.getElementById('admin-dashboard-view') as HTMLElement;
   const adminUserTag = document.getElementById('admin-user-tag') as HTMLElement;
+  const guardTitle = document.getElementById('guard-title') as HTMLElement;
+  const guardMessage = document.getElementById('guard-message') as HTMLElement;
+  const guardLoginBtn = document.getElementById('guard-login-btn') as HTMLElement;
 
   const kpiRevenue = document.getElementById('kpi-total-revenue') as HTMLElement;
   const kpiOrders = document.getElementById('kpi-total-orders') as HTMLElement;
@@ -590,6 +797,34 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
   const kpiProducts = document.getElementById('kpi-total-products') as HTMLElement;
   const kpiInventoryUnits = document.getElementById('kpi-total-inventory-units') as HTMLElement;
   const kpiAvgTicket = document.getElementById('kpi-avg-ticket') as HTMLElement;
+
+  // Módulo RP Elementos
+  const rpMpTotal = document.getElementById('rp-mp-total') as HTMLElement;
+  const rpMpCount = document.getElementById('rp-mp-count') as HTMLElement;
+  const rpTcTotal = document.getElementById('rp-tc-total') as HTMLElement;
+  const rpTcCount = document.getElementById('rp-tc-count') as HTMLElement;
+  const rpTdTotal = document.getElementById('rp-td-total') as HTMLElement;
+  const rpTdCount = document.getElementById('rp-td-count') as HTMLElement;
+  const rpOtherTotal = document.getElementById('rp-other-total') as HTMLElement;
+  const rpOtherCount = document.getElementById('rp-other-count') as HTMLElement;
+
+  const rpStatusDelivered = document.getElementById('rp-status-delivered') as HTMLElement;
+  const rpDeliveredPct = document.getElementById('rp-delivered-pct') as HTMLElement;
+  const rpStatusShipped = document.getElementById('rp-status-shipped') as HTMLElement;
+  const rpShippedPct = document.getElementById('rp-shipped-pct') as HTMLElement;
+  const rpStatusPreparing = document.getElementById('rp-status-preparing') as HTMLElement;
+  const rpPreparingPct = document.getElementById('rp-preparing-pct') as HTMLElement;
+  const rpStatusPaid = document.getElementById('rp-status-paid') as HTMLElement;
+  const rpPaidPct = document.getElementById('rp-paid-pct') as HTMLElement;
+
+  const rpSummaryRevenue = document.getElementById('rp-summary-revenue') as HTMLElement;
+  const rpSummaryUnits = document.getElementById('rp-summary-units') as HTMLElement;
+  const rpDeliveryRate = document.getElementById('rp-delivery-rate') as HTMLElement;
+
+  const btnExportCsv = document.getElementById('btn-export-csv') as HTMLElement;
+  const btnExportCsvAlt = document.getElementById('btn-export-csv-alt') as HTMLElement;
+  const btnPrintReport = document.getElementById('btn-print-report') as HTMLElement;
+  const btnPrintReportAlt = document.getElementById('btn-print-report-alt') as HTMLElement;
 
   const ordersTableBody = document.getElementById('orders-table-body') as HTMLElement;
   const ordersEmptyMsg = document.getElementById('orders-empty-msg') as HTMLElement;
@@ -608,11 +843,26 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
   let allOrders: any[] = [];
   let allProducts: any[] = [];
 
-  // 2. Verificación de Seguridad y Rol ADMIN (Bloque B - Parte 3)
+  // Botón de redirección / cambio de cuenta en Auth Guard (Rutas Protegidas - RP)
+  if (guardLoginBtn) {
+    guardLoginBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      authService.logout();
+      window.location.href = '/login?redirect=/admin&role_required=ADMIN';
+    });
+  }
+
+  // 2. Verificación de Seguridad y Rol ADMIN (Rutas Protegidas - RP)
   function checkAdminAccess() {
     if (!authService.isAuthenticated()) {
       if (authGuard) authGuard.style.display = 'block';
       if (dashboardView) dashboardView.style.display = 'none';
+      if (guardTitle) guardTitle.textContent = 'Acceso Restringido: Inicia Sesión';
+      if (guardMessage) guardMessage.textContent = 'Debes iniciar sesión con una cuenta autorizada con rol ADMIN para acceder al Panel de Control.';
+      if (guardLoginBtn) {
+        guardLoginBtn.textContent = 'Iniciar Sesión como Administrador';
+        guardLoginBtn.setAttribute('href', '/login?redirect=/admin&role_required=ADMIN');
+      }
       return false;
     }
 
@@ -620,6 +870,12 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
     if (!user || user.rol !== 'ADMIN') {
       if (authGuard) authGuard.style.display = 'block';
       if (dashboardView) dashboardView.style.display = 'none';
+      if (guardTitle) guardTitle.textContent = 'Acceso Denegado: Rol no Autorizado (RP)';
+      if (guardMessage) guardMessage.textContent = `Hola ${user?.nombre || 'Usuario'}. Tu cuenta (${user?.email || ''}) tiene rol "${user?.rol || 'CLIENTE'}". Esta sección está reservada exclusivamente para Administradores de BiblioTech.`;
+      if (guardLoginBtn) {
+        guardLoginBtn.textContent = 'Cambiar a Cuenta Administrador';
+        guardLoginBtn.setAttribute('href', '/login?redirect=/admin&role_required=ADMIN');
+      }
       return false;
     }
 
@@ -673,6 +929,7 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
       allProducts = res?.productos || [];
 
       calculateKPIs();
+      renderRPMetrics();
       renderOrdersTable();
     } catch (err: any) {
       console.error('[Admin Dashboard] Error:', err);
@@ -796,6 +1053,7 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
             // Actualizar clase CSS del selector
             select.className = `status-select status-${newStatus} order-status-changer`;
             calculateKPIs();
+            renderRPMetrics();
             if ((window as any).showToast) {
               (window as any).showToast(`Orden actualizada a: ${newStatus}`, 'success');
             }
@@ -868,11 +1126,245 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
     if (orderModal) orderModal.style.display = 'none';
   }
 
+  // 6. Módulo RP — Cálculo y Renderizado de Métricas de Reportes
+  function renderRPMetrics() {
+    let mpTotal = 0, mpCount = 0;
+    let tcTotal = 0, tcCount = 0;
+    let tdTotal = 0, tdCount = 0;
+    let otherTotal = 0, otherCount = 0;
+
+    let deliveredCount = 0, shippedCount = 0, preparingCount = 0, paidCount = 0;
+    let totalItemsSold = 0;
+
+    const totalOrders = allOrders.length;
+
+    allOrders.forEach(ord => {
+      const metodo = (ord.metodoPago || '').toUpperCase();
+      const st = (ord.status || '').toUpperCase();
+      const val = Number(ord.total || 0);
+
+      if (metodo.includes('MERCADO_PAGO')) {
+        mpTotal += val;
+        mpCount++;
+      } else if (metodo.includes('CREDITO')) {
+        tcTotal += val;
+        tcCount++;
+      } else if (metodo.includes('DEBITO')) {
+        tdTotal += val;
+        tdCount++;
+      } else {
+        otherTotal += val;
+        otherCount++;
+      }
+
+      if (st === 'ENTREGADO') deliveredCount++;
+      else if (st === 'ENVIADO') shippedCount++;
+      else if (st === 'PREPARANDO') preparingCount++;
+      else if (st === 'PAGADO') paidCount++;
+
+      if (ord.detalles && Array.isArray(ord.detalles)) {
+        ord.detalles.forEach((d: any) => {
+          totalItemsSold += Number(d.cantidad || 0);
+        });
+      }
+    });
+
+    if (rpMpTotal) rpMpTotal.textContent = `$${mpTotal.toFixed(2)} MXN`;
+    if (rpMpCount) rpMpCount.textContent = `${mpCount} orden${mpCount === 1 ? '' : 'es'}`;
+    if (rpTcTotal) rpTcTotal.textContent = `$${tcTotal.toFixed(2)} MXN`;
+    if (rpTcCount) rpTcCount.textContent = `${tcCount} orden${tcCount === 1 ? '' : 'es'}`;
+    if (rpTdTotal) rpTdTotal.textContent = `$${tdTotal.toFixed(2)} MXN`;
+    if (rpTdCount) rpTdCount.textContent = `${tdCount} orden${tdCount === 1 ? '' : 'es'}`;
+    if (rpOtherTotal) rpOtherTotal.textContent = `$${otherTotal.toFixed(2)} MXN`;
+    if (rpOtherCount) rpOtherCount.textContent = `${otherCount} orden${otherCount === 1 ? '' : 'es'}`;
+
+    const pct = (cnt: number) => totalOrders > 0 ? `${Math.round((cnt / totalOrders) * 100)}%` : '0%';
+
+    if (rpStatusDelivered) rpStatusDelivered.textContent = deliveredCount.toString();
+    if (rpDeliveredPct) rpDeliveredPct.textContent = pct(deliveredCount);
+    if (rpStatusShipped) rpStatusShipped.textContent = shippedCount.toString();
+    if (rpShippedPct) rpShippedPct.textContent = pct(shippedCount);
+    if (rpStatusPreparing) rpStatusPreparing.textContent = preparingCount.toString();
+    if (rpPreparingPct) rpPreparingPct.textContent = pct(preparingCount);
+    if (rpStatusPaid) rpStatusPaid.textContent = paidCount.toString();
+    if (rpPaidPct) rpPaidPct.textContent = pct(paidCount);
+
+    const grossRevenue = allOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+    if (rpSummaryRevenue) rpSummaryRevenue.textContent = `$${grossRevenue.toFixed(2)} MXN`;
+    if (rpSummaryUnits) rpSummaryUnits.textContent = `${totalItemsSold} libros`;
+    if (rpDeliveryRate) rpDeliveryRate.textContent = pct(deliveredCount);
+  }
+
+  // 7. Módulo RP — Exportación de Datos (CSV & Impresión PDF)
+  function exportRPToCSV() {
+    if (!allOrders || allOrders.length === 0) {
+      if ((window as any).showToast) (window as any).showToast('No hay órdenes registradas para exportar.', 'error');
+      return;
+    }
+    const headers = ['Folio', 'Fecha', 'Cliente', 'Email', 'MetodoPago', 'Estado', 'Subtotal', 'Envio', 'Total', 'Articulos'];
+    const rows = allOrders.map(o => {
+      const items = (o.detalles || []).map((d: any) => `${d.producto?.titulo || 'Libro'} (x${d.cantidad})`).join('; ');
+      const fecha = o.fecha ? new Date(o.fecha).toLocaleString('es-MX') : '';
+      return [
+        `"${o.folio || o.id}"`,
+        `"${fecha}"`,
+        `"${(o.nombreCliente || '').replace(/"/g, '""')}"`,
+        `"${(o.emailCliente || '').replace(/"/g, '""')}"`,
+        `"${o.metodoPago || ''}"`,
+        `"${o.status || ''}"`,
+        (Number(o.subtotal) || 0).toFixed(2),
+        (Number(o.envio) || 0).toFixed(2),
+        (Number(o.total) || 0).toFixed(2),
+        `"${items.replace(/"/g, '""')}"`
+      ].join(',');
+    });
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Reporte_Backoffice_RP_BiblioTech_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    if ((window as any).showToast) {
+      (window as any).showToast('📥 Reporte RP exportado exitosamente a CSV', 'success');
+    }
+  }
+
+  function printRPReport() {
+    window.print();
+  }
+
+  // 8. GraphQL Subscriptions en Tiempo Real (graphql-ws)
+  function iniciarWebSocketSuscripcion() {
+    const token = authService.getToken() || '';
+    const wsStatusBadge = document.getElementById('ws-status-badge');
+
+    let wsBase = 'ws://localhost:4000/graphql';
+    try {
+      const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4000/';
+      if (apiUrl.startsWith('https')) {
+        wsBase = apiUrl.replace('https', 'wss').replace(/\/$/, '') + '/graphql';
+      } else if (apiUrl.startsWith('http')) {
+        const parsed = new URL(apiUrl);
+        wsBase = `ws://${parsed.hostname}:4000/graphql`;
+      }
+    } catch {}
+
+    let socket: WebSocket | null = null;
+    let reconnectTimer: any = null;
+
+    function conectar() {
+      try {
+        socket = new WebSocket(wsBase, 'graphql-transport-ws');
+
+        socket.onopen = () => {
+          if (wsStatusBadge) {
+            wsStatusBadge.textContent = '🟡 Autenticando WS...';
+            wsStatusBadge.style.cssText = 'background:#fef9c3; color:#854d0e; border:1px solid #fde047; font-weight:600;';
+          }
+          socket?.send(JSON.stringify({
+            type: 'connection_init',
+            payload: {
+              authorization: token ? `Bearer ${token}` : ''
+            }
+          }));
+        };
+
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'connection_ack') {
+              if (wsStatusBadge) {
+                wsStatusBadge.textContent = '🟢 Suscripción GQL Activa';
+                wsStatusBadge.style.cssText = 'background:#dcfce7; color:#166534; border:1px solid #86efac; font-weight:600;';
+              }
+              socket?.send(JSON.stringify({
+                id: 'sub_admin_dashboard',
+                type: 'subscribe',
+                payload: {
+                  query: `
+                    subscription OnPedidoCreadoDashboard {
+                      pedidoCreado {
+                        id
+                        folio
+                        fecha
+                        subtotal
+                        envio
+                        total
+                        status
+                        metodoPago
+                        direccionEnvio
+                        nombreCliente
+                        emailCliente
+                        detalles {
+                          id
+                          cantidad
+                          precioUnitario
+                          subtotal
+                          producto {
+                            id
+                            titulo
+                            autor
+                            imagen
+                          }
+                        }
+                      }
+                    }
+                  `
+                }
+              }));
+            } else if (data.type === 'next' && data.payload?.data?.pedidoCreado) {
+              const nuevo = data.payload.data.pedidoCreado;
+              if (!allOrders.some(o => o.id === nuevo.id || o.folio === nuevo.folio)) {
+                allOrders.unshift(nuevo);
+                calculateKPIs();
+                renderRPMetrics();
+                renderOrdersTable();
+                if ((window as any).showToast) {
+                  (window as any).showToast(`🟢 ¡Nueva Orden #${nuevo.folio} recibida vía Subscriptions! ($${Number(nuevo.total).toFixed(2)} MXN)`, 'success');
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('[WS Dashboard] Error:', err);
+          }
+        };
+
+        socket.onclose = () => {
+          if (wsStatusBadge) {
+            wsStatusBadge.textContent = '🔴 WS Desconectado';
+            wsStatusBadge.style.cssText = 'background:#fee2e2; color:#991b1b; border:1px solid #f87171; font-weight:600;';
+          }
+          clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(conectar, 4000);
+        };
+
+        socket.onerror = () => {
+          if (wsStatusBadge) {
+            wsStatusBadge.textContent = '🔴 Reconectando WS...';
+          }
+        };
+      } catch (e) {
+        console.warn('[WS Dashboard] Error al conectar:', e);
+      }
+    }
+
+    conectar();
+  }
+
   if (modalOrderClose) modalOrderClose.addEventListener('click', closeOrderModal);
   if (btnCloseOrderModal) btnCloseOrderModal.addEventListener('click', closeOrderModal);
   if (btnRefresh) btnRefresh.addEventListener('click', loadDashboardData);
   if (filterSearch) filterSearch.addEventListener('input', renderOrdersTable);
   if (filterStatus) filterStatus.addEventListener('change', renderOrdersTable);
+
+  if (btnExportCsv) btnExportCsv.addEventListener('click', exportRPToCSV);
+  if (btnExportCsvAlt) btnExportCsvAlt.addEventListener('click', exportRPToCSV);
+  if (btnPrintReport) btnPrintReport.addEventListener('click', printRPReport);
+  if (btnPrintReportAlt) btnPrintReportAlt.addEventListener('click', printRPReport);
 
   window.addEventListener('click', (e) => {
     if (e.target === orderModal) closeOrderModal();
@@ -881,5 +1373,6 @@ const pageTitle = "Panel de Control y Dashboard — Admin BiblioTech";
   // Inicializar
   if (checkAdminAccess()) {
     loadDashboardData();
+    iniciarWebSocketSuscripcion();
   }
 </script>
