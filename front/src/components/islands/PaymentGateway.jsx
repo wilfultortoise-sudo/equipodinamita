@@ -28,7 +28,7 @@ const MP_TEST_CARDS = [
 ];
 
 export default function PaymentGateway() {
-  // Pestañas independientes: MERCADO_PAGO (pasarela con card token y webhook) y TARJETA_CREDITO (tarjeta bancaria directa)
+  // Pestaña unificada: Tarjeta de Crédito / Débito a través de Mercado Pago Checkout API
   const [selectedMethod, setSelectedMethod] = useState('MERCADO_PAGO');
   const [cardSubtype, setCardSubtype] = useState('TARJETA_CREDITO'); // TARJETA_CREDITO o TARJETA_DEBITO
   
@@ -183,48 +183,34 @@ export default function PaymentGateway() {
 
       const last4 = cleanNum.slice(-4) || '••••';
 
-      if (selectedMethod === 'MERCADO_PAGO') {
-        // Pasarela Mercado Pago: generación de Card Token (PCI-DSS)
-        if (isCardValid) {
-          const [mes, anio] = cleanExp.includes('/') ? cleanExp.split('/') : ['', ''];
-          const tokenPayload = {
-            cardNumber: cleanNum,
-            cardholderName: cardHolder.trim().toUpperCase(),
-            expirationMonth: parseInt(mes, 10),
-            expirationYear: 2000 + parseInt(anio, 10),
-            securityCode: cleanCvv,
-            brand: cardBrand,
-            gateway: 'MERCADO_PAGO',
-            timestamp: Date.now()
-          };
-          token = `tok_mp_${btoa(unescape(encodeURIComponent(JSON.stringify(tokenPayload))))}`;
-          setGeneratedToken(token);
-        } else {
-          setGeneratedToken(null);
-        }
-
-        detallesPago = {
-          pasarela: 'MERCADO_PAGO',
-          marca: cardBrand === 'amex' ? 'AMERICAN EXPRESS' : (cardBrand === 'generic' ? 'TARJETA BANCARIA' : cardBrand.toUpperCase()),
-          ultimos4: last4,
-          titular: cardHolder || 'NO ESPECIFICADO',
-          subtipo: cardSubtype,
-          tokenTarjeta: token
+      // Pasarela Mercado Pago: generación de Card Token (PCI-DSS)
+      if (isCardValid) {
+        const [mes, anio] = cleanExp.includes('/') ? cleanExp.split('/') : ['', ''];
+        const tokenPayload = {
+          cardNumber: cleanNum,
+          cardholderName: cardHolder.trim().toUpperCase(),
+          expirationMonth: parseInt(mes, 10),
+          expirationYear: 2000 + parseInt(anio, 10),
+          securityCode: cleanCvv,
+          brand: cardBrand,
+          gateway: 'MERCADO_PAGO',
+          timestamp: Date.now()
         };
-        referenciaPago = `MP-TOK-${last4}`;
+        token = `tok_mp_${btoa(unescape(encodeURIComponent(JSON.stringify(tokenPayload))))}`;
+        setGeneratedToken(token);
       } else {
-        // Tarjeta Bancaria Directa (sin intermediación de Mercado Pago)
         setGeneratedToken(null);
-        detallesPago = {
-          pasarela: 'TARJETA_BANCARIA',
-          banco: 'EMISOR BANCARIO NACIONAL',
-          marca: cardBrand === 'amex' ? 'AMERICAN EXPRESS' : (cardBrand === 'generic' ? 'TARJETA BANCARIA' : cardBrand.toUpperCase()),
-          ultimos4: last4,
-          titular: cardHolder || 'NO ESPECIFICADO',
-          subtipo: cardSubtype
-        };
-        referenciaPago = `CARD-${last4}`;
       }
+
+      detallesPago = {
+        pasarela: 'MERCADO_PAGO',
+        marca: cardBrand === 'amex' ? 'AMERICAN EXPRESS' : (cardBrand === 'generic' ? 'TARJETA BANCARIA' : cardBrand.toUpperCase()),
+        ultimos4: last4,
+        titular: cardHolder || 'NO ESPECIFICADO',
+        subtipo: cardSubtype,
+        tokenTarjeta: token
+      };
+      referenciaPago = `MP-TOK-${last4}`;
     } else if (selectedMethod === 'OXXO_EFECTIVO') {
       detallesPago = {
         tienda: 'OXXO Pay',
@@ -246,7 +232,9 @@ export default function PaymentGateway() {
       referenciaPago = `SPEI-${Date.now().toString().slice(-6)}`;
     }
 
-    const metodoFinal = selectedMethod === 'TARJETA_CREDITO' ? cardSubtype : selectedMethod;
+    const metodoFinal = (selectedMethod === 'TARJETA_CREDITO' || selectedMethod === 'TARJETA_DEBITO')
+      ? 'MERCADO_PAGO'
+      : selectedMethod;
 
     const payload = {
       metodoPago: metodoFinal,
@@ -296,24 +284,15 @@ export default function PaymentGateway() {
         </h3>
       </div>
 
-      {/* Pestañas de Selección: 5 Métodos Independientes */}
+      {/* Pestañas de Selección de Métodos de Pago */}
       <div className="gateway-tabs">
-        <button
-          type="button"
-          className={`gateway-tab ${selectedMethod === 'TARJETA_CREDITO' ? 'active' : ''}`}
-          onClick={() => setSelectedMethod('TARJETA_CREDITO')}
-        >
-          <span className="tab-icon">💳</span>
-          <span className="tab-label">Tarjeta Bancaria</span>
-        </button>
-
         <button
           type="button"
           className={`gateway-tab ${selectedMethod === 'MERCADO_PAGO' ? 'active' : ''}`}
           onClick={() => setSelectedMethod('MERCADO_PAGO')}
         >
-          <span className="tab-icon">💙</span>
-          <span className="tab-label">Mercado Pago</span>
+          <span className="tab-icon">💳</span>
+          <span className="tab-label">Tarjeta / Mercado Pago</span>
         </button>
 
         <button
@@ -344,165 +323,18 @@ export default function PaymentGateway() {
         </button>
       </div>
 
-      {/* CONTENIDO 1: TARJETA BANCARIA DIRECTA */}
-      {selectedMethod === 'TARJETA_CREDITO' && (
-        <div className="gateway-content card-payment-panel">
-          <div className="bank-card-badge-row">
-            <div className="mp-badge-title">
-              <span className="bank-brand-logo">💳 Tarjeta Bancaria Directa</span>
-              <span className="mp-subtitle">Pago directo con tarjeta de crédito o débito</span>
-            </div>
-            <div className="mp-features">
-              <span className="feature-pill bank-pill">🏦 Cargo Bancario</span>
-              <span className="feature-pill bank-pill">🔒 Cifrado 256-bit SSL</span>
-            </div>
-          </div>
-
-          {/* Tarjeta Virtual Animada */}
-          <div className={`virtual-card-wrapper ${isFlipped ? 'flipped' : ''}`}>
-            {/* Frente de la Tarjeta */}
-            <div className={`virtual-card card-front brand-${cardBrand}`}>
-              <div className="card-top-row">
-                <div className="card-chip"></div>
-                <div className="card-brand-badge">{getBrandDisplayName(cardBrand)}</div>
-              </div>
-              <div className="card-number-display">
-                {cardNumber || (cardBrand === 'amex' ? '•••• •••••• •••••' : '•••• •••• •••• ••••')}
-              </div>
-              <div className="card-bottom-row">
-                <div className="card-holder-col">
-                  <span className="col-label">TITULAR</span>
-                  <span className="col-val">{cardHolder || 'NOMBRE APELLIDO'}</span>
-                </div>
-                <div className="card-expiry-col">
-                  <span className="col-label">VENCE</span>
-                  <span className="col-val">{cardExpiry || 'MM/AA'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Reverso de la Tarjeta */}
-            <div className={`virtual-card card-back brand-${cardBrand}`}>
-              <div className="magnetic-bar"></div>
-              <div className="cvv-band">
-                <span className="cvv-label">{cardBrand === 'amex' ? 'CID (4 dígitos)' : 'CVV / CVC'}</span>
-                <span className="cvv-val">{cardCvv ? (cardBrand === 'amex' ? '••••' : '•••') : (cardBrand === 'amex' ? '1234' : '123')}</span>
-              </div>
-              <p className="card-security-note">Firma autorizada. Transacción directa protegida por cifrado bancario SSL.</p>
-            </div>
-          </div>
-
-          {/* Formulario de Entrada de Tarjeta Bancaria */}
-          <div className="card-form-grid">
-            <div className="form-group full-width">
-              <label htmlFor="input-card-num-bank" className="field-label">
-                Número de Tarjeta <span className="req-star">*</span>
-              </label>
-              <div className="input-with-icon">
-                <input
-                  id="input-card-num-bank"
-                  type="text"
-                  className="gateway-input"
-                  placeholder={cardBrand === 'amex' ? '3782 822468 98210' : '4152 7890 1234 9812'}
-                  value={cardNumber}
-                  onChange={handleCardNumberChange}
-                  maxLength={cardBrand === 'amex' ? 17 : 19}
-                  inputMode="numeric"
-                />
-                <span className="field-icon-brand">{getBrandDisplayName(cardBrand)}</span>
-              </div>
-            </div>
-
-            <div className="form-group full-width">
-              <label htmlFor="input-card-holder-bank" className="field-label">
-                Nombre del Titular (como figura en el plástico) <span className="req-star">*</span>
-              </label>
-              <input
-                id="input-card-holder-bank"
-                type="text"
-                className="gateway-input"
-                placeholder="JUAN PEREZ GARCIA"
-                value={cardHolder}
-                onChange={handleCardHolderChange}
-              />
-            </div>
-
-            <div className="form-group half-width">
-              <label htmlFor="input-card-exp-bank" className="field-label">
-                Vencimiento <span className="req-star">*</span>
-              </label>
-              <input
-                id="input-card-exp-bank"
-                type="text"
-                className="gateway-input"
-                placeholder="MM/AA"
-                value={cardExpiry}
-                onChange={handleExpiryChange}
-                maxLength={5}
-                inputMode="numeric"
-              />
-            </div>
-
-            <div className="form-group half-width">
-              <label htmlFor="input-card-cvv-bank" className="field-label">
-                {cardBrand === 'amex' ? 'Código CID (4 dígitos)' : 'Código CVV (3 dígitos)'} <span className="req-star">*</span>
-              </label>
-              <input
-                id="input-card-cvv-bank"
-                type="password"
-                className="gateway-input"
-                placeholder={cardBrand === 'amex' ? '1234' : '123'}
-                value={cardCvv}
-                onChange={handleCvvChange}
-                onFocus={() => setIsFlipped(true)}
-                onBlur={() => setIsFlipped(false)}
-                maxLength={maxCvvDigits}
-                inputMode="numeric"
-              />
-            </div>
-          </div>
-
-          <div className="card-type-toggle">
-            <label className="radio-pill">
-              <input
-                type="radio"
-                name="cardSubtypeBank"
-                value="TARJETA_CREDITO"
-                checked={cardSubtype === 'TARJETA_CREDITO'}
-                onChange={() => setCardSubtype('TARJETA_CREDITO')}
-              />
-              <span>Tarjeta de Crédito</span>
-            </label>
-            <label className="radio-pill">
-              <input
-                type="radio"
-                name="cardSubtypeBank"
-                value="TARJETA_DEBITO"
-                checked={cardSubtype === 'TARJETA_DEBITO'}
-                onChange={() => setCardSubtype('TARJETA_DEBITO')}
-              />
-              <span>Tarjeta de Débito</span>
-            </label>
-          </div>
-
-          <div className="bank-secure-note">
-            <span>🛡️</span>
-            <span>Pago directo bancario con confirmación y emisión de folio inmediata.</span>
-          </div>
-        </div>
-      )}
-
-      {/* CONTENIDO 2: PASARELA MERCADO PAGO API CON CARD TOKEN & WEBHOOK */}
+      {/* CONTENIDO 1: TARJETA DE CRÉDITO O DÉBITO — MERCADO PAGO CHECKOUT API */}
       {selectedMethod === 'MERCADO_PAGO' && (
         <div className="gateway-content card-payment-panel">
           <div className="mp-panel-badge-row">
             <div className="mp-badge-title">
-              <span className="mp-brand-logo"> Pasarela Oficial Mercado Pago API</span>
-              <span className="mp-subtitle">Formulario de Tarjeta con Card Token (PCI-DSS) & Webhook</span>
+              <span className="mp-brand-logo">💳 Pago con Tarjeta (Mercado Pago Checkout API)</span>
+              <span className="mp-subtitle">Tarjeta de Crédito o Débito con Card Token (PCI-DSS) & Webhook</span>
             </div>
             <div className="mp-features">
               <span className="feature-pill">🔒 Card Token (PCI-DSS)</span>
               <span className="feature-pill">⚡ Webhook Activo</span>
+              <span className="feature-pill">🛡️ 17 Escenarios MP</span>
             </div>
           </div>
 
