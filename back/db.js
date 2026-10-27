@@ -91,6 +91,21 @@ export function initDB() {
   } catch (err) {
     console.warn('[DB] Verificacion de cuentas admin:', err.message);
   }
+
+  // Migración defensiva: asegurar columnas de pasarela multimétodo en la tabla pedidos
+  try {
+    const cols = db.prepare('PRAGMA table_info(pedidos)').all().map(c => c.name);
+    if (!cols.includes('detallesPago')) {
+      db.prepare('ALTER TABLE pedidos ADD COLUMN detallesPago TEXT;').run();
+      console.log('[DB] Columna detallesPago agregada a pedidos.');
+    }
+    if (!cols.includes('referenciaPago')) {
+      db.prepare('ALTER TABLE pedidos ADD COLUMN referenciaPago TEXT;').run();
+      console.log('[DB] Columna referenciaPago agregada a pedidos.');
+    }
+  } catch (err) {
+    console.warn('[DB] Migracion columnas pedidos:', err.message);
+  }
 }
 
 // Repositorios de datos
@@ -209,12 +224,8 @@ export const dbRepo = {
     return db.prepare('SELECT * FROM detalles_pedido WHERE pedidoId = ?').all(pedidoId);
   },
 
-  // ==========================================================
-  // KPIs DEL PANEL ADMINISTRATIVO
-  // ==========================================================
-
+  // KPIs del Panel Administrativo
   getAdminKPIs: () => {
-
     const ventas = db.prepare(`
       SELECT COALESCE(SUM(total), 0) AS total
       FROM pedidos
@@ -312,17 +323,17 @@ export const dbRepo = {
     stmt.run(
       updated.titulo,
       updated.autor,
-      updated.isbn,
-      updated.editorial,
+      updated.isbn || null,
+      updated.editorial || null,
       updated.precio,
-      updated.precioAnterior,
+      updated.precioAnterior || null,
       updated.imagen,
       updated.categoriaId,
       updated.stock,
-      updated.descripcion,
-      updated.paginas,
-      updated.rating,
-      updated.resenasCount,
+      updated.descripcion || '',
+      updated.paginas || 300,
+      updated.rating || 4.8,
+      updated.resenasCount || 0,
       updated.destacado ? 1 : 0,
       id
     );

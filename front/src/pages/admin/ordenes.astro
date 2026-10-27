@@ -10,9 +10,12 @@ const pageTitle = "Gestión de Órdenes | BiblioTech Store";
     <section class="admin-header">
       <div>
         <span class="admin-label">BIBLIOTECH STORE</span>
-        <h1>Gestión de Órdenes</h1>
+        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+          <h1>Gestión de Órdenes</h1>
+          <span id="ws-status-badge" class="ws-badge ws-connecting">🟡 Conectando WS...</span>
+        </div>
         <p>
-          Consulta y administra los pedidos realizados en la tienda.
+          Consulta y supervisa las ventas y pedidos en tiempo real con WebSocket.
         </p>
       </div>
 
@@ -20,6 +23,19 @@ const pageTitle = "Gestión de Órdenes | BiblioTech Store";
         ← Panel Admin
       </a>
     </section>
+
+    <!-- Verificación de Seguridad y Rol ADMIN (Rutas Protegidas - RP) -->
+    <div id="admin-auth-guard" class="auth-guard-card" style="display: none;">
+      <div class="guard-icon">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      </div>
+      <h2 id="guard-title">Acceso Restringido para Administradores</h2>
+      <p id="guard-message">Debes iniciar sesión con una cuenta autorizada con rol ADMIN para acceder a la Gestión de Órdenes.</p>
+      <div class="guard-actions">
+        <a href="/login?redirect=/admin/ordenes&role_required=ADMIN" class="btn-guard-primary" id="guard-login-btn">Iniciar Sesión como Administrador</a>
+        <a href="/" class="btn-guard-outline">Volver a la Tienda</a>
+      </div>
+    </div>
 
     <!-- Cargando -->
     <section id="loading" class="message-card">
@@ -527,16 +543,51 @@ const pageTitle = "Gestión de Órdenes | BiblioTech Store";
       const userRaw =
         localStorage.getItem('auth_user');
 
+      const authGuardEl = document.getElementById('admin-auth-guard');
+      const guardTitleEl = document.getElementById('guard-title');
+      const guardMsgEl = document.getElementById('guard-message');
+      const guardLoginBtnEl = document.getElementById('guard-login-btn');
+      const headerSection = document.querySelector('.admin-header') as HTMLElement;
+
+      if (guardLoginBtnEl) {
+        guardLoginBtnEl.addEventListener('click', (e) => {
+          e.preventDefault();
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_user');
+          window.location.href = '/login?redirect=/admin/ordenes&role_required=ADMIN';
+        });
+      }
+
+      function blockAccess(isLoggedIn: boolean, usr?: any) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (contentEl) contentEl.style.display = 'none';
+        if (headerSection) headerSection.style.display = 'none';
+        if (authGuardEl) {
+          authGuardEl.style.display = 'block';
+          if (!isLoggedIn) {
+            if (guardTitleEl) guardTitleEl.textContent = 'Acceso Restringido: Inicia Sesión';
+            if (guardMsgEl) guardMsgEl.textContent = 'Se requiere autenticación con privilegios de Administrador para gestionar órdenes en tiempo real.';
+            if (guardLoginBtnEl) {
+              guardLoginBtnEl.textContent = 'Iniciar Sesión como Administrador';
+              guardLoginBtnEl.setAttribute('href', '/login?redirect=/admin/ordenes&role_required=ADMIN');
+            }
+          } else {
+            if (guardTitleEl) guardTitleEl.textContent = 'Acceso Denegado: Rol no Autorizado (RP)';
+            if (guardMsgEl) guardMsgEl.textContent = `Hola ${usr?.nombre || 'Usuario'}. Tu cuenta (${usr?.email || ''}) tiene rol "${usr?.rol || 'CLIENTE'}". Esta sección está reservada exclusivamente para Administradores de BiblioTech.`;
+            if (guardLoginBtnEl) {
+              guardLoginBtnEl.textContent = 'Cambiar a Cuenta Administrador';
+              guardLoginBtnEl.setAttribute('href', '/login?redirect=/admin/ordenes&role_required=ADMIN');
+            }
+          }
+        }
+      }
 
       // --------------------------------------------------
       // Verificar sesión
       // --------------------------------------------------
 
       if (!token || !userRaw) {
-
-        window.location.href =
-          '/login?redirect=/admin/ordenes';
-
+        blockAccess(false);
         return;
       }
 
@@ -558,24 +609,17 @@ const pageTitle = "Gestión de Órdenes | BiblioTech Store";
 
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
-
-        window.location.href =
-          '/login?redirect=/admin/ordenes';
-
+        blockAccess(false);
         return;
       }
 
 
       // --------------------------------------------------
-      // Verificar ADMIN
+      // Verificar ADMIN (Rutas Protegidas - RP)
       // --------------------------------------------------
 
       if (usuario.rol !== 'ADMIN') {
-
-        mostrarError(
-          'Tu cuenta no tiene permisos de administrador.'
-        );
-
+        blockAccess(true, usuario);
         return;
       }
 
@@ -759,12 +803,235 @@ const pageTitle = "Gestión de Órdenes | BiblioTech Store";
     }
 
 
-    cargarOrdenes();
+    // --------------------------------------------------
+    // FASE 4: GraphQL Subscription pedidoCreado (WebSocket en tiempo real)
+    // --------------------------------------------------
+    function iniciarWebSocketSuscripcion(): void {
+      const token = localStorage.getItem('auth_token') || '';
+      const wsStatusBadge = document.getElementById('ws-status-badge');
 
+      // Determinar endpoint WebSocket oficial
+      let wsBase = 'ws://localhost:4000/graphql';
+      try {
+        if (API_URL.startsWith('https')) {
+          wsBase = API_URL.replace('https', 'wss').replace(/\/$/, '') + '/graphql';
+        } else if (API_URL.startsWith('http')) {
+          const parsed = new URL(API_URL);
+          wsBase = `ws://${parsed.hostname}:4000/graphql`;
+        }
+      } catch {}
+
+      let socket: WebSocket | null = null;
+      let reconnectTimer: any = null;
+
+      function conectar() {
+        try {
+          socket = new WebSocket(wsBase, 'graphql-transport-ws');
+
+          socket.onopen = () => {
+            if (wsStatusBadge) {
+              wsStatusBadge.className = 'ws-badge ws-connecting';
+              wsStatusBadge.textContent = '🟡 Autenticando WS...';
+            }
+            // Handshake con subprotocolo graphql-transport-ws
+            socket?.send(JSON.stringify({
+              type: 'connection_init',
+              payload: {
+                authorization: token ? `Bearer ${token}` : ''
+              }
+            }));
+          };
+
+          socket.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+
+              if (data.type === 'connection_ack') {
+                if (wsStatusBadge) {
+                  wsStatusBadge.className = 'ws-badge ws-online';
+                  wsStatusBadge.textContent = '🟢 En vivo (WS Conectado)';
+                }
+
+                // Suscribirse en tiempo real al evento pedidoCreado
+                socket?.send(JSON.stringify({
+                  id: 'sub_pedidos_admin',
+                  type: 'subscribe',
+                  payload: {
+                    query: `
+                      subscription OnPedidoCreado {
+                        pedidoCreado {
+                          id
+                          folio
+                          fecha
+                          subtotal
+                          envio
+                          total
+                          status
+                          metodoPago
+                          direccionEnvio
+                          nombreCliente
+                          emailCliente
+                          usuarioId
+                          detalles {
+                            id
+                            cantidad
+                            precioUnitario
+                            subtotal
+                            producto {
+                              id
+                              titulo
+                              autor
+                              imagen
+                            }
+                          }
+                        }
+                      }
+                    `
+                  }
+                }));
+              } else if (data.type === 'next' && data.payload?.data?.pedidoCreado) {
+                const nuevoPedido = data.payload.data.pedidoCreado;
+                recibirNuevoPedidoEnVivo(nuevoPedido);
+              }
+            } catch (err) {
+              console.warn('[WS] Error interpretando mensaje:', err);
+            }
+          };
+
+          socket.onclose = () => {
+            if (wsStatusBadge) {
+              wsStatusBadge.className = 'ws-badge ws-offline';
+              wsStatusBadge.textContent = '🔴 WS Desconectado';
+            }
+            clearTimeout(reconnectTimer);
+            reconnectTimer = setTimeout(conectar, 4000);
+          };
+
+          socket.onerror = () => {
+            if (wsStatusBadge) {
+              wsStatusBadge.className = 'ws-badge ws-offline';
+              wsStatusBadge.textContent = '🔴 Reconectando WS...';
+            }
+          };
+        } catch (e) {
+          console.warn('[WS] Fallo al inicializar WebSocket:', e);
+        }
+      }
+
+      function recibirNuevoPedidoEnVivo(pedido: any): void {
+        if (!ordersContainer) return;
+
+        // Remover mensaje de vacío si existía
+        const emptyEl = ordersContainer.querySelector('.empty-card');
+        if (emptyEl) emptyEl.remove();
+
+        // Evitar duplicados
+        const existingCard = ordersContainer.querySelector(`[data-order-folio="${pedido.folio}"]`);
+        if (existingCard) return;
+
+        // Crear tarjeta y animar su llegada en tiempo real
+        const card = crearPedidoHTML(pedido);
+        card.setAttribute('data-order-folio', pedido.folio);
+        card.classList.add('new-order-pulse');
+
+        // Insertar al inicio de la lista
+        ordersContainer.insertBefore(card, ordersContainer.firstChild);
+
+        // Actualizar contador
+        if (totalOrdersElement) {
+          const actual = Number(totalOrdersElement.textContent || 0);
+          totalOrdersElement.textContent = String(actual + 1);
+        }
+
+        // Alerta visual Toast
+        if ((window as any).showToast) {
+          (window as any).showToast(`🔔 ¡Nueva orden recibida en vivo: ${pedido.folio}! Total: $${pedido.total} MXN`, 'success');
+        }
+      }
+
+      conectar();
+    }
+
+    cargarOrdenes();
+    iniciarWebSocketSuscripcion();
   </script>
 
 
   <style>
+
+    /* Auth Guard (Rutas Protegidas - RP) */
+    .auth-guard-card {
+      max-width: 560px;
+      margin: 4rem auto;
+      text-align: center;
+      padding: 3rem 2rem;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    .guard-icon {
+      color: #dc2626;
+      margin-bottom: 1.25rem;
+    }
+
+    .auth-guard-card h2 {
+      margin: 0 0 0.75rem 0;
+      font-size: 1.5rem;
+      color: #1e293b;
+    }
+
+    .auth-guard-card p {
+      color: #64748b;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .guard-actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-guard-primary {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      background: #2563eb;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-guard-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-guard-outline {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      background: transparent;
+      color: #475569;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border: 1px solid #cbd5e1;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-guard-outline:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
 
     .admin-page {
       max-width: 1200px;
@@ -1074,12 +1341,53 @@ const pageTitle = "Gestión de Órdenes | BiblioTech Store";
         grid-template-columns: 1fr;
       }
 
-      .orders-summary {
-        align-items: flex-start;
-        gap: 15px;
-        flex-direction: column;
-      }
+    .ws-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      transition: all 0.25s ease;
+    }
 
+    .ws-online {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+
+    .ws-connecting {
+      background: #fef9c3;
+      color: #a16207;
+      border: 1px solid #fde047;
+    }
+
+    .ws-offline {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+    }
+
+    @keyframes highlightNewOrder {
+      0% {
+        background-color: #dcfce7;
+        transform: translateY(-8px) scale(1.01);
+        box-shadow: 0 10px 25px rgba(22, 163, 74, 0.25);
+      }
+      70% {
+        background-color: #f0fdf4;
+      }
+      100% {
+        background-color: white;
+        transform: translateY(0) scale(1);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      }
+    }
+
+    .new-order-pulse {
+      animation: highlightNewOrder 2.5s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
   </style>

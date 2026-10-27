@@ -257,11 +257,12 @@ a {
 #toast-container {
   position: fixed;
   bottom: 1.5rem;
-  right: 1.5rem;
-  z-index: 9999;
+  top: 20px;
+  right: 20px;
+  z-index: 20000;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 10px;
   pointer-events: none;
 }
 
@@ -282,4 +283,849 @@ a {
 @keyframes slideIn {
   from { transform: translateY(100%); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+/* ==========================================================================
+   PASARELA MULTIM├ëTODO INTERACTIVA (Hugo - React Island)
+   ========================================================================== */
+.payment-gateway-island {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.gateway-header {
+  margin-bottom: var(--spacing-md);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.gateway-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.gateway-secure-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #16a34a;
+  background: #f0fdf4;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid #bbf7d0;
+}
+
+/* Pesta├▒as de Pago */
+.gateway-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  margin-bottom: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+  .gateway-tabs {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .gateway-tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.gateway-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.75rem 0.5rem;
+  background: #f8fafc;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.gateway-tab:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.gateway-tab.active {
+  background: #eff6ff;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.gateway-tab .tab-icon {
+  font-size: 1.35rem;
+}
+
+.gateway-tab .tab-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* Header de Mercado Pago */
+.mp-panel-badge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: var(--spacing-md);
+  padding: 0.75rem 1rem;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius-md);
+}
+
+/* Header de Tarjeta Bancaria Directa */
+.bank-card-badge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: var(--spacing-md);
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+}
+
+.bank-brand-logo {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.feature-pill.bank-pill {
+  color: #334155;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.mp-sandbox-notice {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  color: #0369a1;
+  line-height: 1.5;
+}
+
+.mp-sandbox-notice code {
+  background: #e0f2fe;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.mp-scenarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 0.35rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+}
+
+.mp-scenario-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 5px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 0.73rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  font-family: inherit;
+}
+
+.mp-scenario-chip:hover {
+  background: #eff6ff;
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.mp-scenario-chip.active {
+  border-color: #0284c7;
+  background: #e0f2fe;
+  font-weight: 700;
+}
+
+.chip-code {
+  font-family: monospace;
+  font-weight: 800;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 0.72rem;
+}
+
+.chip-label {
+  color: #334155;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-fill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.quick-fill-btn {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+  background: #ffffff;
+  border: 1px solid #93c5fd;
+  color: #0284c7;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.quick-fill-btn:hover {
+  background: #e0f2fe;
+  border-color: #0284c7;
+}
+
+.bank-secure-note {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mp-badge-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-brand-logo {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0369a1;
+}
+
+.mp-subtitle {
+  font-size: 0.78rem;
+  color: #0c4a6e;
+}
+
+.mp-features {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.feature-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0369a1;
+  background: #e0f2fe;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid #7dd3fc;
+}
+
+.req-star {
+  color: #ef4444;
+}
+
+/* Indicador de Tokenización */
+.token-status-box {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.token-status-box.token-pending {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+
+.token-status-box.token-ready {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+}
+
+.token-info-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.82rem;
+}
+
+.token-string {
+  font-family: monospace;
+  font-weight: 700;
+  color: #166534;
+  margin: 0.2rem 0;
+  background: #dcfce7;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 0.78rem;
+}
+
+.token-sub {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Tarjeta Virtual Animada */
+.virtual-card-wrapper {
+  perspective: 1000px;
+  max-width: 380px;
+  margin: 0 auto var(--spacing-lg) auto;
+  height: 210px;
+}
+
+.virtual-card {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 15px 25px -5px rgba(15, 23, 42, 0.35);
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+.virtual-card.brand-visa {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e1b4b 100%);
+}
+
+.virtual-card.brand-mastercard {
+  background: linear-gradient(135deg, #b91c1c 0%, #431407 100%);
+}
+
+.virtual-card.brand-amex {
+  background: linear-gradient(135deg, #0284c7 0%, #0c4a6e 50%, #0369a1 100%);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.virtual-card.card-back {
+  display: none;
+  background: linear-gradient(135deg, #334155 0%, #0f172a 100%);
+  padding: 1.25rem 0;
+}
+
+.virtual-card-wrapper.flipped .card-front {
+  display: none;
+}
+
+.virtual-card-wrapper.flipped .card-back {
+  display: flex;
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-chip {
+  width: 42px;
+  height: 30px;
+  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+  border-radius: 6px;
+  border: 1px solid #fef08a;
+}
+
+.card-brand-badge {
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.25rem 0.65rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+
+.card-number-display {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.3rem;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.card-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.col-label {
+  display: block;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+}
+
+.col-val {
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.magnetic-bar {
+  width: 100%;
+  height: 40px;
+  background: #000000;
+  margin-top: 0.5rem;
+}
+
+.cvv-band {
+  background: #ffffff;
+  color: #0f172a;
+  height: 36px;
+  margin: 1rem 1.5rem 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.75rem;
+  border-radius: 4px;
+}
+
+.cvv-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  margin-right: 0.5rem;
+}
+
+.cvv-val {
+  font-family: monospace;
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.card-security-note {
+  font-size: 0.68rem;
+  opacity: 0.7;
+  text-align: center;
+  margin: 0.75rem 1.5rem 0 1.5rem;
+}
+
+/* Campos de Formulario Tarjeta */
+.card-form-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.card-form-grid .full-width {
+  width: 100%;
+}
+
+.card-form-grid .half-width {
+  width: calc(50% - 0.375rem);
+}
+
+.field-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.25rem;
+}
+
+.gateway-input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.92rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.gateway-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.input-with-icon {
+  position: relative;
+}
+
+.input-with-icon .gateway-input {
+  padding-right: 155px;
+}
+
+.field-icon-brand {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.card-type-toggle {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.radio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* OXXO Pay */
+.oxxo-ticket {
+  background: #fffbeb;
+  border: 1.5px dashed #f59e0b;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.oxxo-ticket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.oxxo-brand {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #b45309;
+}
+
+.oxxo-badge {
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid #fde68a;
+}
+
+.oxxo-instructions {
+  font-size: 0.88rem;
+  color: #78350f;
+  margin-bottom: 1rem;
+}
+
+.oxxo-reference-box {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  margin-bottom: 1rem;
+}
+
+.ref-title {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.ref-number {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: 0.12em;
+}
+
+.btn-copy-ref {
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-copy-ref:hover {
+  background: #e2e8f0;
+}
+
+.oxxo-barcode {
+  text-align: center;
+  background: #ffffff;
+  padding: 1rem 0;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+}
+
+.barcode-lines {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 55px;
+}
+
+.barcode-lines span {
+  display: inline-block;
+  height: 100%;
+  background: #0f172a;
+}
+
+.barcode-num {
+  display: block;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+.oxxo-terms {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: #92400e;
+}
+
+/* Digital Wallets */
+.wallet-options-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.wallet-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wallet-btn.active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+}
+
+.wallet-card {
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+}
+
+.wallet-card.mp-style {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.wallet-card.pp-style {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.wallet-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.wallet-card-header h4 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.mp-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #0284c7;
+  color: #ffffff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.pp-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #d97706;
+  color: #ffffff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.wallet-perks {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sandbox-demo-box {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+}
+
+.badge-demo {
+  background: #475569;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+}
+
+/* SPEI */
+.spei-card {
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.spei-card h4 {
+  margin: 0 0 0.25rem 0;
+}
+
+.spei-subtitle {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+}
+
+.spei-data-table {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.88rem;
+}
+
+.data-row:last-child {
+  border-bottom: none;
+}
+
+.data-row.highlight {
+  background: #eff6ff;
+}
+
+.clabe-copy-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clabe-code {
+  font-family: monospace;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.btn-copy-small {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #ffffff;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-copy-small:hover {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.spei-alert {
+  font-size: 0.82rem;
+  color: #475569;
+  line-height: 1.4;
 }

@@ -56,6 +56,9 @@ const pageTitle = "Iniciar Sesión — BiblioTech Store";
             <button type="button" class="chip-btn" data-email="hector.reyes@ceti.mx" data-pass="23100134">
               Admin (Héctor)
             </button>
+            <button type="button" class="chip-btn" data-email="admin@bibliotech.com" data-pass="admin123">
+              Admin (General)
+            </button>
             <button type="button" class="chip-btn" data-email="juan.perez@example.com" data-pass="cliente1">
               Cliente (Juan)
             </button>
@@ -133,6 +136,17 @@ const pageTitle = "Iniciar Sesión — BiblioTech Store";
     margin-bottom: var(--spacing-md);
   }
 
+  .alert-info {
+    background-color: #eff6ff;
+    border: 1px solid #60a5fa;
+    color: #1e40af;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
   .demo-users-box {
     margin-top: var(--spacing-lg);
     padding: 0.75rem;
@@ -194,11 +208,64 @@ const pageTitle = "Iniciar Sesión — BiblioTech Store";
 <script>
   import { authService } from '../services/auth.js';
 
-  // Si ya tiene sesión, redirigir
+  // Manejo de sesión y protección de acceso administrativo (Rutas Protegidas - RP)
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get('redirect') || '/';
+  const isAdminTarget = redirect.startsWith('/admin');
+  const roleRequired = params.get('role_required');
+
+  // Si ya tiene sesión activa:
   if (authService.isAuthenticated()) {
-    const params = new URLSearchParams(window.location.search);
-    const redirect = params.get('redirect') || '/';
-    window.location.href = redirect;
+    const user = authService.getUser();
+
+    // Rutas Protegidas (RP): Si el destino es BackOffice (/admin...) y el usuario NO es ADMIN:
+    if (isAdminTarget && user?.rol !== 'ADMIN') {
+      // Cerrar la sesión de cliente para que no se quede atrapado en un bucle infinito
+      authService.logout();
+
+      const errorAlert = document.getElementById('auth-error-alert') as HTMLDivElement;
+      if (errorAlert) {
+        errorAlert.className = 'alert-info';
+        errorAlert.style.display = 'block';
+        errorAlert.innerHTML = `
+          <div style="display:flex; align-items:flex-start; gap:0.5rem; text-align:left;">
+            <span style="font-size:1.3rem;">🛡️</span>
+            <div>
+              <strong>Ruta Protegida (BackOffice RP):</strong><br>
+              Tu sesión anterior (<em>${user?.email || 'Cliente'}</em>) tiene rol <code>${user?.rol || 'CLIENTE'}</code>.<br>
+              Se ha cerrado la sesión para que puedas ingresar con una cuenta con rol <strong>ADMIN</strong>.
+            </div>
+          </div>
+        `;
+      }
+
+      // Pre-llenar credenciales de Administrador para facilitar las pruebas
+      const emailInput = document.getElementById('email') as HTMLInputElement;
+      const passInput = document.getElementById('password') as HTMLInputElement;
+      if (emailInput && passInput) {
+        emailInput.value = 'hector.reyes@ceti.mx';
+        passInput.value = '23100134';
+      }
+    } else if (roleRequired === 'ADMIN' && user?.rol !== 'ADMIN') {
+      authService.logout();
+    } else {
+      // Usuario con rol autorizado (o destino público): redirigir normalmente
+      window.location.href = redirect;
+    }
+  } else if (isAdminTarget) {
+    // Si no está autenticado pero viene rebotado de una ruta de /admin
+    const errorAlert = document.getElementById('auth-error-alert') as HTMLDivElement;
+    if (errorAlert) {
+      errorAlert.className = 'alert-info';
+      errorAlert.style.display = 'block';
+      errorAlert.innerHTML = `🛡️ <strong>Ruta Protegida (BackOffice RP):</strong> Inicia sesión con una cuenta de <strong>Administrador</strong> para acceder al panel.`;
+    }
+    const emailInput = document.getElementById('email') as HTMLInputElement;
+    const passInput = document.getElementById('password') as HTMLInputElement;
+    if (emailInput && passInput && !emailInput.value) {
+      emailInput.value = 'hector.reyes@ceti.mx';
+      passInput.value = '23100134';
+    }
   }
 
   // Cuentas demo

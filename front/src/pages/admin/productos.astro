@@ -15,7 +15,7 @@ const pageTitle = "Gestión de Libros e Inventario — Admin BiblioTech";
         <h2 id="guard-title">Acceso Restringido para Administradores</h2>
         <p id="guard-message">Debes iniciar sesión con una cuenta con rol de Administrador para acceder al panel de inventario y catálogo.</p>
         <div class="guard-actions">
-          <a href="/login?redirect=/admin/productos" class="btn btn-primary" id="guard-login-btn">Iniciar Sesión como Admin</a>
+          <a href="/login?redirect=/admin/productos&role_required=ADMIN" class="btn btn-primary" id="guard-login-btn">Iniciar Sesión como Administrador</a>
           <a href="/" class="btn btn-outline">Volver a la Tienda</a>
         </div>
       </div>
@@ -796,13 +796,17 @@ const pageTitle = "Gestión de Libros e Inventario — Admin BiblioTech";
   let allCategories: any[] = [];
   let pendingDeleteId: string | null = null;
 
-  // 2. Verificación de Seguridad y Rol ADMIN (Bloque B - Parte 3)
+  // 2. Verificación de Seguridad y Rol ADMIN (Rutas Protegidas - RP)
   function checkAdminAccess() {
     if (!authService.isAuthenticated()) {
       if (authGuard) authGuard.style.display = 'block';
       if (adminView) adminView.style.display = 'none';
       if (guardTitle) guardTitle.textContent = 'Acceso Restringido: Inicia Sesión';
       if (guardMessage) guardMessage.textContent = 'Se requiere autenticación con privilegios de Administrador para gestionar libros e inventario.';
+      if (guardLoginBtn) {
+        guardLoginBtn.textContent = 'Iniciar Sesión como Administrador';
+        guardLoginBtn.setAttribute('href', '/login?redirect=/admin/productos&role_required=ADMIN');
+      }
       return false;
     }
 
@@ -810,11 +814,11 @@ const pageTitle = "Gestión de Libros e Inventario — Admin BiblioTech";
     if (!user || user.rol !== 'ADMIN') {
       if (authGuard) authGuard.style.display = 'block';
       if (adminView) adminView.style.display = 'none';
-      if (guardTitle) guardTitle.textContent = 'Acceso Denegado: Rol no Autorizado';
-      if (guardMessage) guardMessage.textContent = `Hola ${user?.nombre || 'Usuario'}. Tu cuenta tiene rol "${user?.rol || 'CLIENTE'}". Esta sección está reservada exclusivamente para Administradores de BiblioTech.`;
+      if (guardTitle) guardTitle.textContent = 'Acceso Denegado: Rol no Autorizado (RP)';
+      if (guardMessage) guardMessage.textContent = `Hola ${user?.nombre || 'Usuario'}. Tu cuenta (${user?.email || ''}) tiene rol "${user?.rol || 'CLIENTE'}". Esta sección está reservada exclusivamente para Administradores de BiblioTech.`;
       if (guardLoginBtn) {
-        guardLoginBtn.textContent = 'Cambiar de Cuenta';
-        guardLoginBtn.setAttribute('href', '/login?redirect=/admin/productos');
+        guardLoginBtn.textContent = 'Cambiar a Cuenta Administrador';
+        guardLoginBtn.setAttribute('href', '/login?redirect=/admin/productos&role_required=ADMIN');
       }
       return false;
     }
@@ -1292,6 +1296,15 @@ const pageTitle = "Gestión de Libros e Inventario — Admin BiblioTech";
     if (e.target === productModal) closeModal();
     if (e.target === deleteModal) closeDeleteModal();
   });
+
+  // Botón de redirección / cambio de cuenta en Auth Guard (Rutas Protegidas)
+  if (guardLoginBtn) {
+    guardLoginBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      authService.logout();
+      window.location.href = '/login?redirect=/admin/productos&role_required=ADMIN';
+    });
+  }
 
   // 9. Inicialización
   if (checkAdminAccess()) {
