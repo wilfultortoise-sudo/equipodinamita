@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "bibliotech-store": {
+      "command": "node",
+      "args": ["back/mcp_server.js"],
+      "description": "Servidor MCP oficial de BiblioTech Store. Expone herramientas para consultar catálogo, inventario en tiempo real, rastreo de pedidos y métricas de e-commerce."
+    }
+  }
+}

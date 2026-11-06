@@ -1,0 +1,120 @@
+name: CI/CD Pipeline - BiblioTech E-Commerce
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # FASE 1: INTEGRACION CONTINUA (CI)
+  # - Verificacion de Calidad y Sintaxis de Codigo
+  # - Pruebas Automatizadas de GraphQL Subscriptions (graphql-ws) y Mutaciones
+  # - Compilacion y Generacion del Build de Produccion (Astro + React)
+  build-and-test:
+    name: "CI: Calidad, Pruebas y Build de Produccion"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar entorno Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Instalar dependencias del Backend
+        run: |
+          cd back
+          npm ci
+
+      - name: Instalar dependencias del Frontend
+        run: |
+          cd front
+          npm ci
+
+      - name: Analisis de Calidad y Sintaxis de Codigo
+        run: |
+          echo "=== 1. Validando sintaxis de archivos del Backend ==="
+          node --check back/index.js
+          node --check back/schema.js
+          node --check back/resolvers.js
+          node --check back/db.js
+          node --check back/mercadopago.js
+          echo "Sintaxis del Backend verificada sin errores."
+
+      - name: Iniciar Servidor Backend Hibrido (HTTP y WebSockets)
+        run: |
+          cd back
+          node index.js &
+          echo "Servidor Backend lanzado en segundo plano."
+
+      - name: Verificar Disponibilidad del Servidor (Healthcheck)
+        run: |
+          echo "Verificando respuesta del endpoint de salud..."
+          for i in {1..30}; do
+            if curl -s http://localhost:4000/health | grep -q "ok"; then
+              echo "Servidor Backend respondiendo exitosamente en http://localhost:4000/health"
+              exit 0
+            fi
+            echo "Esperando que el servidor inicialice (intento $i/30)..."
+            sleep 1
+          done
+          echo "Error: El servidor no respondio a tiempo."
+          exit 1
+
+      - name: Ejecutar Suite de Pruebas Automatizadas
+        run: |
+          cd back
+          node test_subscriptions.js
+
+      - name: Generar Build de Produccion del Frontend (Astro y React)
+        run: |
+          cd front
+          npm run build
+
+      - name: Guardar Artefacto de Produccion (front/dist)
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-production-dist
+          path: front/dist
+          retention-days: 7
+
+  # FASE 2: DESPLIEGUE CONTINUO (CD)
+  # - Publicacion del Build a Netlify (Entorno de Produccion)
+  deploy-netlify:
+    name: "CD: Despliegue Automatico a Netlify"
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Descargar Artefacto de Produccion
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-production-dist
+          path: front/dist
+
+      - name: Publicar Build en Netlify
+        run: |
+          if [ -n "$NETLIFY_AUTH_TOKEN" ] && [ -n "$NETLIFY_SITE_ID" ]; then
+            echo "Iniciando despliegue hacia Netlify..."
+            npx --yes netlify-cli deploy --dir=front/dist --prod --auth="$NETLIFY_AUTH_TOKEN" --site="$NETLIFY_SITE_ID" --message="Deploy CI/CD [${{ github.sha }}]"
+          else
+            echo "Aviso: Secretos de Netlify (NETLIFY_AUTH_TOKEN o NETLIFY_SITE_ID) no configurados en GitHub Secrets."
+            echo "El build de produccion se genero y valido exitosamente en la Fase de CI."
+          fi
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

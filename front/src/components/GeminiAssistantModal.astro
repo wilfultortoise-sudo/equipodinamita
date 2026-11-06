@@ -1,0 +1,460 @@
+---
+// Modal Flotante del Asistente Gemini conectado a MCP
+---
+
+<div id="gemini-assistant-root">
+  <!-- Botón Flotante en la esquina inferior derecha -->
+  <button id="gemini-toggle-btn" class="gemini-fab" type="button" aria-label="Abrir Asistente IA Gemini">
+    <span class="gemini-fab-icon">✨</span>
+    <span class="gemini-fab-text">Asistente Gemini (MCP)</span>
+    <span class="gemini-fab-badge">AI</span>
+  </button>
+
+  <!-- Ventana Flotante del Chat -->
+  <div id="gemini-chat-window" class="gemini-window" style="display: none;">
+    <!-- Cabecera -->
+    <div class="gemini-header">
+      <div class="gemini-header-title">
+        <span class="sparkle-icon">✨</span>
+        <div>
+          <h4>BiblioTech AI (Gemini + MCP)</h4>
+          <span class="gemini-subtitle">Google Gemini 2.5 Flash conectado a herramientas MCP</span>
+        </div>
+      </div>
+      <button id="gemini-close-btn" class="gemini-close" type="button">✕</button>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="gemini-status-bar">
+      <span class="status-dot">●</span>
+      <span>Herramientas activas: <code>search_books</code>, <code>check_stock</code>, <code>get_order_status</code></span>
+    </div>
+
+    <!-- Mensajes -->
+    <div id="gemini-messages" class="gemini-messages">
+      <div class="chat-msg ai-msg">
+        <div class="msg-bubble">
+          ¡Hola! Soy <strong>BiblioTech AI</strong>, impulsado por <strong>Google Gemini</strong> y conectado a las herramientas de <strong>Model Context Protocol (MCP)</strong> de la librería.  
+          <br /><br />
+          Puedo ayudarte a buscar libros, revisar existencias en tiempo real o rastrear cualquier pedido. ¿En qué te puedo colaborar hoy?
+        </div>
+      </div>
+    </div>
+
+    <!-- Sugerencias rápidas -->
+    <div class="gemini-chips">
+      <button type="button" class="gemini-chip" data-prompt="¿Tienen el libro Dune y cuántos quedan en stock?">
+        📦 Stock de Dune
+      </button>
+      <button type="button" class="gemini-chip" data-prompt="Recomiéndame libros de Ciencia Ficción disponibles">
+        🚀 Libros Ciencia Ficción
+      </button>
+      <button type="button" class="gemini-chip" data-prompt="¿Cómo va mi pedido FOL-MVZO7J0U-745?">
+        🚚 Rastrear Pedido
+      </button>
+      <button type="button" class="gemini-chip" data-prompt="¿Cuáles son las métricas de ventas y pedidos de la tienda?">
+        📊 Métricas de Tienda
+      </button>
+    </div>
+
+    <!-- Caja de Entrada -->
+    <form id="gemini-form" class="gemini-input-form">
+      <input
+        type="text"
+        id="gemini-input"
+        placeholder="Pregúntale a Gemini sobre libros, stock o pedidos..."
+        autocomplete="off"
+        required
+      />
+      <button type="submit" id="gemini-send-btn" class="gemini-send-btn" aria-label="Enviar mensaje">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </form>
+  </div>
+</div>
+
+<style>
+  #gemini-assistant-root {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    font-family: inherit;
+  }
+
+  /* Botón Flotante */
+  .gemini-fab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #4f46e5 100%);
+    color: #ffffff;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 9999px;
+    box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4), 0 8px 10px -6px rgba(37, 99, 235, 0.3);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .gemini-fab:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 14px 28px -5px rgba(37, 99, 235, 0.5);
+  }
+
+  .gemini-fab-icon {
+    font-size: 1.25rem;
+    animation: pulseGlow 2s infinite ease-in-out;
+  }
+
+  .gemini-fab-badge {
+    background: #ec4899;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px #93c5fd); }
+    50% { transform: scale(1.18); filter: drop-shadow(0 0 8px #60a5fa); }
+  }
+
+  /* Ventana de Chat */
+  .gemini-window {
+    width: 390px;
+    max-width: calc(100vw - 32px);
+    height: 540px;
+    max-height: calc(100vh - 100px);
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(226, 232, 240, 0.8);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: absolute;
+    bottom: 60px;
+    right: 0;
+    animation: slideUpFade 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slideUpFade {
+    from { opacity: 0; transform: translateY(15px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Cabecera */
+  .gemini-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .gemini-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .gemini-header-title h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  .gemini-subtitle {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    display: block;
+  }
+
+  .gemini-close {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+
+  .gemini-close:hover {
+    color: #ffffff;
+  }
+
+  /* Status Bar */
+  .gemini-status-bar {
+    background: #f1f5f9;
+    padding: 6px 12px;
+    font-size: 0.72rem;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .gemini-status-bar code {
+    background: #e2e8f0;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.68rem;
+    color: #1e293b;
+  }
+
+  .status-dot {
+    color: #10b981;
+    font-size: 0.75rem;
+  }
+
+  /* Mensajes */
+  .gemini-messages {
+    flex: 1;
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f8fafc;
+  }
+
+  .chat-msg {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .user-msg {
+    align-items: flex-end;
+  }
+
+  .user-msg .msg-bubble {
+    background: #2563eb;
+    color: #ffffff;
+    border-radius: 14px 14px 2px 14px;
+  }
+
+  .ai-msg {
+    align-items: flex-start;
+  }
+
+  .ai-msg .msg-bubble {
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px 14px 14px 2px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  .msg-bubble {
+    max-width: 86%;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+
+  .tool-tag {
+    display: inline-block;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    border: 1px solid #bae6fd;
+  }
+
+  /* Chips */
+  .gemini-chips {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #ffffff;
+    border-top: 1px solid #f1f5f9;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .gemini-chip {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.73rem;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .gemini-chip:hover {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+    color: #0284c7;
+  }
+
+  /* Formulario */
+  .gemini-input-form {
+    display: flex;
+    padding: 10px 12px;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    gap: 8px;
+  }
+
+  .gemini-input-form input {
+    flex: 1;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+
+  .gemini-input-form input:focus {
+    border-color: #2563eb;
+  }
+
+  .gemini-send-btn {
+    width: 36px;
+    height: 36px;
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+
+  .gemini-send-btn:hover {
+    background: #1d4ed8;
+  }
+</style>
+
+<script>
+  function setupGeminiWidget() {
+    const toggleBtn = document.getElementById('gemini-toggle-btn');
+    const closeBtn = document.getElementById('gemini-close-btn');
+    const windowEl = document.getElementById('gemini-chat-window');
+    const form = document.getElementById('gemini-form') as HTMLFormElement;
+    const input = document.getElementById('gemini-input') as HTMLInputElement;
+    const messages = document.getElementById('gemini-messages');
+
+    if (!toggleBtn || !windowEl) return;
+
+    toggleBtn.onclick = () => {
+      const isVisible = windowEl.style.display !== 'none';
+      windowEl.style.display = isVisible ? 'none' : 'flex';
+      if (!isVisible && input) {
+        setTimeout(() => input.focus(), 150);
+      }
+    };
+
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        windowEl.style.display = 'none';
+      };
+    }
+
+    // Chips de sugerencia rápida
+    document.querySelectorAll('.gemini-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const prompt = (btn as HTMLElement).dataset.prompt;
+        if (prompt && input) {
+          input.value = prompt;
+          form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+      });
+    });
+
+    async function sendPrompt(text: string) {
+      if (!text.trim() || !messages) return;
+
+      // 1. Agregar mensaje del usuario
+      const userDiv = document.createElement('div');
+      userDiv.className = 'chat-msg user-msg';
+      userDiv.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
+      messages.appendChild(userDiv);
+      messages.scrollTop = messages.scrollHeight;
+
+      // 2. Indicador de carga
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'chat-msg ai-msg';
+      typingDiv.innerHTML = `<div class="msg-bubble" style="color: #64748b;">✨ Gemini pensando y consultando herramientas MCP...</div>`;
+      messages.appendChild(typingDiv);
+      messages.scrollTop = messages.scrollHeight;
+
+      try {
+        const res = await fetch('http://localhost:4000/api/chat-gemini', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+
+        const data = await res.json();
+        typingDiv.remove();
+
+        const aiDiv = document.createElement('div');
+        aiDiv.className = 'chat-msg ai-msg';
+
+        let toolNotice = '';
+        if (data.toolExecuted) {
+          toolNotice = `<span class="tool-tag">🛠️ Herramienta MCP: ${data.toolExecuted}</span><br />`;
+        }
+
+        const formattedReply = (data.reply || 'No obtuve respuesta.')
+          .replace(/\n/g, '<br />')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+        aiDiv.innerHTML = `<div class="msg-bubble">${toolNotice}${formattedReply}</div>`;
+        messages.appendChild(aiDiv);
+        messages.scrollTop = messages.scrollHeight;
+      } catch (err: any) {
+        typingDiv.remove();
+        const errDiv = document.createElement('div');
+        errDiv.className = 'chat-msg ai-msg';
+        errDiv.innerHTML = `<div class="msg-bubble" style="color: #dc2626;">Error al conectar con Gemini: ${err.message}</div>`;
+        messages.appendChild(errDiv);
+        messages.scrollTop = messages.scrollHeight;
+      }
+    }
+
+    function escapeHtml(str: string) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    if (form && input) {
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        const val = input.value.trim();
+        if (val) {
+          sendPrompt(val);
+          input.value = '';
+        }
+      };
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupGeminiWidget);
+  } else {
+    setupGeminiWidget();
+  }
+  document.addEventListener('astro:page-load', setupGeminiWidget);
+</script>

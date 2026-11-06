@@ -1,0 +1,83 @@
+[
+  {
+    "id": "audit-mw5hfk3q-h3n7",
+    "pedidoFolio": "FOL-MW5HFIGU-997",
+    "evento": "CAMBIO_ESTADO_ENVIADO",
+    "metodoPago": "TARJETA_CREDITO",
+    "total": 598,
+    "detalles": "El estado del pedido fue actualizado a ENVIADO",
+    "metadata": {},
+    "fecha": "2026-11-06T21:24:15.110Z"
+  },
+  {
+    "id": "audit-mw5hfihi-oems",
+    "pedidoFolio": "FOL-MW5HFIGU-997",
+    "evento": "PEDIDO_CREADO",
+    "metodoPago": "TARJETA_CREDITO",
+    "total": 598,
+    "detalles": "Orden emitida exitosamente por Cliente Demo WS (TARJETA_CREDITO)",
+    "metadata": {
+      "direccion": "Av. Patria 123, Guadalajara",
+      "email": "demo@cetis.mx",
+      "referencia": "MP-MW5HFIGR-6833"
+    },
+    "fecha": "2026-11-06T21:24:13.014Z"
+  },
+  {
+    "id": "audit-mvzp0uff-w688",
+    "pedidoFolio": "FOL-MVZP0SSK-627",
+    "evento": "CAMBIO_ESTADO_ENVIADO",
+    "metodoPago": "TARJETA_CREDITO",
+    "total": 598,
+    "detalles": "El estado del pedido fue actualizado a ENVIADO",
+    "metadata": {},
+    "fecha": "2026-11-02T20:10:08.523Z"
+  },
+  {
+    "id": "audit-mvzp0st9-vir4",
+    "pedidoFolio": "FOL-MVZP0SSK-627",
+    "evento": "PEDIDO_CREADO",
+    "metodoPago": "TARJETA_CREDITO",
+    "total": 598,
+    "detalles": "Orden emitida exitosamente por Cliente Demo WS (TARJETA_CREDITO)",
+    "metadata": {
+      "direccion": "Av. Patria 123, Guadalajara",
+      "email": "demo@cetis.mx",
+      "referencia": "MP-MVZP0SSJ-4811"
+    },
+    "fecha": "2026-11-02T20:10:06.429Z"
+  },
+  {
+    "id": "audit-mvzo7koj-26qd",
+    "pedidoFolio": "FOL-MVZO7J0U-745",
+    "evento": "CAMBIO_ESTADO_ENVIADO",
+    "metodoPago": "TARJETA_CREDITO",
+    "total": 598,
+    "detalles": "El estado del pedido fue actualizado a ENVIADO",
+    "metadata": {},
+    "fecha": "2026-11-02T19:47:22.867Z"
+  },
+  {
+    "id": "audit-mvzo7j1t-z75z",
+    "pedidoFolio": "FOL-MVZO7J0U-745",
+    "evento": "PEDIDO_CREADO",
+    "metodoPago": "TARJETA_CREDITO",
+    "total": 598,
+    "detalles": "Orden emitida exitosamente por Cliente Demo WS (TARJETA_CREDITO)",
+    "metadata": {
+      "direccion": "Av. Patria 123, Guadalajara",
+      "email": "demo@cetis.mx",
+      "referencia": "MP-MVZO7J0T-4993"
+    },
+    "fecha": "2026-11-02T19:47:20.753Z"
+  },
+  {
+    "id": "audit-001",
+    "pedidoFolio": "FOL-DEMO-INIT",
+    "evento": "SISTEMA_INICIALIZADO",
+    "metodoPago": "SISTEMA",
+    "total": 0,
+    "detalles": "Base de datos NoSQL MongoDB conectada y colecciones listas (resenas & auditoria_pedidos).",
+    "fecha": "2026-11-02T19:37:41.427Z"
+  }
+]

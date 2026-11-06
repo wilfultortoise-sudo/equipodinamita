@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import http from 'http';
 import express from 'express';
 import cors from 'cors';
@@ -11,9 +12,15 @@ import { useServer } from 'graphql-ws/use/ws';
 import { typeDefs } from './schema.js';
 import { resolvers } from './resolvers.js';
 import { initDB, dbRepo, verifyToken } from './db.js';
+import { initPostgres, getPostgresStatus } from './postgres.js';
+import { initMongoDB, getMongoStatus } from './mongodb.js';
+import { MCP_TOOLS_DEFINITIONS, executeMcpTool } from './mcp_tools.js';
+import { chatWithGemini } from './gemini_assistant.js';
 
 // 1. Inicializar la base de datos relacional SQLite
 initDB();
+await initPostgres();
+await initMongoDB();
 
 // 2. Unificar schema ejecutable con makeExecutableSchema
 const schema = makeExecutableSchema({ typeDefs, resolvers });
@@ -164,12 +171,76 @@ app.post('/webhook/mercadopago', async (req, res) => {
   }
 });
 
+// ============================================================
+// ENDPOINTS MCP (Model Context Protocol - Paso 4)
+// ============================================================
+app.get('/mcp', (req, res) => {
+  res.json({
+    name: 'bibliotech-ecommerce-mcp',
+    version: '1.0.0',
+    description: 'Servidor MCP oficial de BiblioTech Store para asistentes de IA (Claude, Cursor, etc.).',
+    status: 'ACTIVE',
+    protocol: 'Model Context Protocol (v2024-11-05 / SDK v1.x)',
+    transport: {
+      stdio: 'node back/mcp_server.js',
+      http: {
+        toolsList: 'GET http://localhost:4000/mcp/tools',
+        toolsCall: 'POST http://localhost:4000/mcp/call'
+      }
+    },
+    toolsAvailable: MCP_TOOLS_DEFINITIONS.map(t => t.name)
+  });
+});
+
+app.get('/mcp/tools', (req, res) => {
+  res.json({
+    tools: MCP_TOOLS_DEFINITIONS
+  });
+});
+
+app.post('/mcp/call', async (req, res) => {
+  try {
+    const { tool, args } = req.body || {};
+    if (!tool) {
+      return res.status(400).json({ error: 'Debes especificar el nombre de la herramienta en el campo "tool".' });
+    }
+
+    const result = await executeMcpTool(tool, args || {});
+    return res.json({ tool, success: true, result });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint del Asistente Gemini conectado a MCP
+app.post('/api/chat-gemini', async (req, res) => {
+  try {
+    const { message, history } = req.body || {};
+    if (!message) {
+      return res.status(400).json({ error: 'El campo "message" es obligatorio.' });
+    }
+
+    const response = await chatWithGemini(message, history || []);
+    return res.json(response);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Endpoint de verificación de salud
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
+    databases: {
+      relational: getPostgresStatus(),
+      nosql: getMongoStatus()
+    },
     server: 'Apollo Server 4 + graphql-ws',
-    endpoints: ['/graphql', '/', '/webhook/mercadopago'],
+    endpoints: ['/graphql', '/', '/webhook/mercadopago', '/mcp', '/mcp/tools', '/mcp/call'],
+    mcp: {
+      status: 'active',
+      tools: MCP_TOOLS_DEFINITIONS.map(t => t.name)
+    },
     subscriptions: ['pedidoCreado', 'pedidoActualizado', 'stockActualizado']
   });
 });

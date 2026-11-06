@@ -165,8 +165,21 @@ const pageTitle = "Gestión de Libros e Inventario — Admin BiblioTech";
               </div>
 
               <div class="form-group form-col">
-                <label class="form-label" for="form-isbn">ISBN / Código</label>
-                <input type="text" id="form-isbn" class="form-input" placeholder="978-8466659734" />
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                  <label class="form-label" for="form-isbn" style="margin: 0;">ISBN / Código</label>
+                  <button type="button" id="btn-fetch-isbn" class="btn btn-outline btn-xs" style="font-size: 0.72rem; padding: 0.2rem 0.5rem; border-color: #0284c7; color: #0284c7;">
+                    API Google Books
+                  </button>
+                </div>
+                <div style="display: flex; gap: 0.4rem;">
+                  <input type="text" id="form-isbn" class="form-input" placeholder="Ej. 9780441172719" style="flex: 1;" />
+                  <button type="button" id="btn-search-isbn-action" class="btn btn-primary btn-sm" title="Consultar Google Books API" style="padding: 0 0.8rem;">
+                    Buscar
+                  </button>
+                </div>
+                <span id="isbn-loading-indicator" style="font-size: 0.75rem; color: #0284c7; display: none; margin-top: 0.25rem;">
+                  Consultando Google Books & Open Library API...
+                </span>
               </div>
             </div>
 
@@ -1305,6 +1318,87 @@ const pageTitle = "Gestión de Libros e Inventario — Admin BiblioTech";
       window.location.href = '/login?redirect=/admin/productos&role_required=ADMIN';
     });
   }
+
+  // 8.1. Integración de API de Terceros: Google Books & Open Library
+  async function fetchBookByISBN() {
+    const rawIsbn = formIsbn ? formIsbn.value : '';
+    const cleanIsbn = rawIsbn.replace(/[^0-9X]/gi, '').trim();
+    if (!cleanIsbn) {
+      if ((window as any).showToast) {
+        (window as any).showToast('Ingresa un ISBN válido (10 o 13 dígitos) para consultar.', 'info');
+      }
+      return;
+    }
+
+    const indicator = document.getElementById('isbn-loading-indicator');
+    if (indicator) indicator.style.display = 'block';
+
+    try {
+      // 1. Google Books API
+      const gRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
+      const gData = await gRes.json();
+
+      if (gData.totalItems > 0 && gData.items?.[0]?.volumeInfo) {
+        const info = gData.items[0].volumeInfo;
+        if (info.title && formTitulo) formTitulo.value = info.title;
+        if (info.authors && info.authors.length > 0 && formAutor) formAutor.value = info.authors.join(', ');
+        if (info.publisher && formEditorial) formEditorial.value = info.publisher;
+        if (info.pageCount && formPaginas) formPaginas.value = info.pageCount.toString();
+        if (info.description && formDescripcion) formDescripcion.value = info.description;
+        if (info.imageLinks?.thumbnail && formImagen) {
+          const secureCover = info.imageLinks.thumbnail.replace('http://', 'https://');
+          formImagen.value = secureCover;
+          if (modalImgPreview) modalImgPreview.src = secureCover;
+        }
+        if ((window as any).showToast) {
+          (window as any).showToast(`Libro "${info.title}" importado exitosamente desde Google Books API.`, 'success');
+        }
+        return;
+      }
+
+      // 2. Open Library API Fallback
+      const olRes = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`);
+      const olData = await olRes.json();
+      const olKey = `ISBN:${cleanIsbn}`;
+
+      if (olData && olData[olKey]) {
+        const book = olData[olKey];
+        if (book.title && formTitulo) formTitulo.value = book.title;
+        if (book.authors && book.authors.length > 0 && formAutor) {
+          formAutor.value = book.authors.map((a: any) => a.name).join(', ');
+        }
+        if (book.publishers && book.publishers.length > 0 && formEditorial) {
+          formEditorial.value = book.publishers[0].name;
+        }
+        if (book.number_of_pages && formPaginas) formPaginas.value = book.number_of_pages.toString();
+        if ((book.cover?.large || book.cover?.medium) && formImagen) {
+          const coverUrl = book.cover.large || book.cover.medium;
+          formImagen.value = coverUrl;
+          if (modalImgPreview) modalImgPreview.src = coverUrl;
+        }
+        if ((window as any).showToast) {
+          (window as any).showToast(`Libro "${book.title}" importado exitosamente desde Open Library API.`, 'success');
+        }
+        return;
+      }
+
+      if ((window as any).showToast) {
+        (window as any).showToast('No se encontró información en Google Books ni Open Library para ese ISBN.', 'warning');
+      }
+    } catch (err: any) {
+      console.error('[Google Books API] Error al consultar metadatos:', err);
+      if ((window as any).showToast) {
+        (window as any).showToast('Error al conectar con Google Books API.', 'error');
+      }
+    } finally {
+      if (indicator) indicator.style.display = 'none';
+    }
+  }
+
+  const btnFetchIsbn = document.getElementById('btn-fetch-isbn');
+  const btnSearchIsbn = document.getElementById('btn-search-isbn-action');
+  if (btnFetchIsbn) btnFetchIsbn.addEventListener('click', fetchBookByISBN);
+  if (btnSearchIsbn) btnSearchIsbn.addEventListener('click', fetchBookByISBN);
 
   // 9. Inicialización
   if (checkAdminAccess()) {

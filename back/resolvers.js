@@ -1,6 +1,9 @@
 import { dbRepo } from './db.js';
 import { pubsub, TOPICS } from './pubsub.js';
 import { procesarPagoMercadoPago } from './mercadopago.js';
+import { enviarCorreoConfirmacionPedido } from './mailer.js';
+import { mongoReviews, mongoAudit, getMongoStatus } from './mongodb.js';
+import { getPostgresStatus } from './postgres.js';
 
 // ============================================================
 // PROTECCIÓN DE ROL
@@ -97,6 +100,34 @@ export const resolvers = {
 
     pedido: (_, { id }) => {
       return dbRepo.getPedidoById(id);
+    },
+
+    // ========================================================
+    // QUERIES MONGODB NOSQL & POSTGRESQL (Paso 3)
+    // ========================================================
+    resenasPorProducto: async (_, { productoId }) => {
+      return await mongoReviews.getByProduct(productoId);
+    },
+
+    auditoriaPedido: async (_, { pedidoFolio }) => {
+      return await mongoAudit.getByFolio(pedidoFolio);
+    },
+
+    todasAuditorias: async (_, { limite }) => {
+      return await mongoAudit.getAll(limite || 50);
+    },
+
+    statusBasesDeDatos: () => {
+      const pg = getPostgresStatus();
+      const mg = getMongoStatus();
+      return {
+        relacionalMotor: pg.engine,
+        relacionalConectado: pg.isConnected,
+        nosqlMotor: mg.driver,
+        nosqlModo: mg.mode,
+        nosqlConectado: mg.isConnected,
+        nosqlColecciones: mg.collections
+      };
     }
   },
 
@@ -217,13 +248,68 @@ export const resolvers = {
         }
       }
 
+      // 3. Enviar correo transaccional de confirmación (API de Terceros 4)
+      enviarCorreoConfirmacionPedido(nuevoPedido).catch(err => {
+        console.warn('[Resolvers] Advertencia al despachar correo:', err.message);
+      });
+
+      // 4. Registrar auditoría del ciclo de vida en MongoDB NoSQL (Paso 3)
+      mongoAudit.logEvent({
+        pedidoFolio: nuevoPedido.folio,
+        evento: 'PEDIDO_CREADO',
+        metodoPago: nuevoPedido.metodoPago,
+        total: nuevoPedido.total,
+        detalles: `Orden emitida exitosamente por ${nuevoPedido.nombreCliente} (${nuevoPedido.metodoPago})`,
+        metadata: {
+          direccion: nuevoPedido.direccionEnvio,
+          email: nuevoPedido.emailCliente,
+          referencia: nuevoPedido.referenciaPago || null
+        }
+      }).catch(err => console.warn('[MongoDB Audit]', err.message));
+
       return nuevoPedido;
     },
 
     actualizarEstadoPedido: (_, { id, status }) => {
       const pedidoActualizado = dbRepo.actualizarEstadoPedido(id, status);
       safePublish(TOPICS.PEDIDO_ACTUALIZADO, { pedidoActualizado });
+
+      // Registrar cambio de estado en MongoDB NoSQL (Paso 3)
+      mongoAudit.logEvent({
+        pedidoFolio: pedidoActualizado.folio,
+        evento: `CAMBIO_ESTADO_${status}`,
+        metodoPago: pedidoActualizado.metodoPago,
+        total: pedidoActualizado.total,
+        detalles: `El estado del pedido fue actualizado a ${status}`
+      }).catch(err => console.warn('[MongoDB Audit]', err.message));
+
       return pedidoActualizado;
+    },
+
+    crearResena: async (_, { productoId, usuarioNombre, calificacion, comentario }) => {
+      const resena = await mongoReviews.create({
+        productoId,
+        usuarioNombre,
+        calificacion,
+        comentario
+      });
+
+      // Recalcular promedio de rating y conteo de reseñas en la base relacional
+      try {
+        const todas = await mongoReviews.getByProduct(productoId);
+        const count = todas.length;
+        const avg = todas.reduce((acc, r) => acc + Number(r.calificacion), 0) / (count || 1);
+        const rounded = Math.round(avg * 10) / 10;
+        
+        dbRepo.actualizarProducto(productoId, {
+          rating: rounded,
+          resenasCount: count
+        });
+      } catch (e) {
+        console.warn('[Resolvers] Error al actualizar métricas del libro:', e.message);
+      }
+
+      return resena;
     }
   },
 

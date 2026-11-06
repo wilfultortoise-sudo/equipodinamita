@@ -530,6 +530,76 @@ const pageTitle = "Gestión de Órdenes | BiblioTech Store";
       card.appendChild(productsSection);
       card.appendChild(address);
 
+      // Sección de Auditoría NoSQL en MongoDB (Paso 3)
+      const auditBox = document.createElement('div');
+      auditBox.className = 'mongo-audit-section';
+      auditBox.style.cssText = 'margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed #cbd5e1;';
+      auditBox.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <span style="font-size: 0.8rem; color: #059669; font-weight: 700;">🍃 Trazabilidad NoSQL (MongoDB Atlas)</span>
+          <button type="button" class="btn btn-outline btn-xs btn-view-audit" data-folio="${pedido.folio}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; border: 1px solid #10b981; color: #059669; border-radius: 4px; cursor: pointer; background: #ecfdf5;">
+            📜 Ver Trazabilidad MongoDB
+          </button>
+        </div>
+        <div class="audit-history-timeline" id="audit-${pedido.folio}" style="display: none; margin-top: 0.5rem; background: #f8fafc; border-radius: 6px; padding: 0.5rem; font-size: 0.8rem; border: 1px solid #e2e8f0;"></div>
+      `;
+
+      const auditBtn = auditBox.querySelector('.btn-view-audit') as HTMLButtonElement;
+      const timelineEl = auditBox.querySelector('.audit-history-timeline') as HTMLDivElement;
+
+      if (auditBtn && timelineEl) {
+        auditBtn.addEventListener('click', async () => {
+          if (timelineEl.style.display === 'block') {
+            timelineEl.style.display = 'none';
+            auditBtn.textContent = '📜 Ver Trazabilidad MongoDB';
+            return;
+          }
+
+          timelineEl.style.display = 'block';
+          timelineEl.innerHTML = '<span style="color: #64748b;">Consultando colección auditoria_pedidos en MongoDB...</span>';
+          auditBtn.textContent = 'Ocultar Trazabilidad';
+
+          try {
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                query: `
+                  query ObtenerAuditoria($folio: String!) {
+                    auditoriaPedido(pedidoFolio: $folio) {
+                      id
+                      evento
+                      detalles
+                      fecha
+                      metodoPago
+                    }
+                  }
+                `,
+                variables: { folio: pedido.folio }
+              })
+            });
+            const data = await res.json();
+            const events = data?.data?.auditoriaPedido || [];
+
+            if (events.length === 0) {
+              timelineEl.innerHTML = `<span style="color: #64748b;">No hay eventos registrados aún para este folio en MongoDB.</span>`;
+            } else {
+              timelineEl.innerHTML = events.map((ev: any) => `
+                <div style="border-left: 2px solid #10b981; padding-left: 0.5rem; margin-bottom: 0.4rem;">
+                  <strong style="color: #065f46;">${ev.evento}</strong>
+                  <span style="color: #94a3b8; font-size: 0.72rem; margin-left: 0.35rem;">(${new Date(ev.fecha).toLocaleTimeString('es-MX')})</span>
+                  <div style="color: #334155;">${ev.detalles}</div>
+                </div>
+              `).join('');
+            }
+          } catch (e: any) {
+            timelineEl.innerHTML = `<span style="color: #ef4444;">Error al consultar MongoDB: ${e.message}</span>`;
+          }
+        });
+      }
+
+      card.appendChild(auditBox);
+
 
       return card;
     }

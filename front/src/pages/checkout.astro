@@ -5,6 +5,10 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
 ---
 
 <BaseLayout pageTitle={pageTitle}>
+  <!-- Libreria de Mapas Leaflet + OpenStreetMap (API de Terceros 3) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
   <div class="checkout-page">
     <div class="container">
       
@@ -32,7 +36,7 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
 
           <div id="checkout-error-alert" class="alert-error" style="display: none;"></div>
 
-          <form id="checkout-form" class="checkout-form">
+          <form id="checkout-form" class="checkout-form" novalidate>
             
             <!-- Sección 1: Datos de Contacto y Envío -->
             <div class="card form-section-card">
@@ -48,10 +52,12 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
                 <div class="form-group form-col">
                   <label class="form-label" for="nombreCliente">Nombre Completo *</label>
                   <input type="text" id="nombreCliente" class="form-input" required placeholder="Ej. Juan Pérez González" />
+                  <span class="field-error-msg" id="err-nombre"></span>
                 </div>
                 <div class="form-group form-col">
                   <label class="form-label" for="emailCliente">Correo Electrónico *</label>
                   <input type="email" id="emailCliente" class="form-input" required placeholder="tu.correo@ejemplo.com" />
+                  <span class="field-error-msg" id="err-email"></span>
                 </div>
               </div>
 
@@ -59,20 +65,52 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
                 <div class="form-group form-col">
                   <label class="form-label" for="telefonoCliente">Teléfono de Contacto (10 dígitos) *</label>
                   <input type="tel" id="telefonoCliente" class="form-input" required placeholder="Ej. 3312345678" maxlength="10" />
+                  <span class="field-error-msg" id="err-tel"></span>
                 </div>
                 <div class="form-group form-col">
                   <label class="form-label" for="ciudadCliente">Ciudad / Estado *</label>
                   <input type="text" id="ciudadCliente" class="form-input" value="Guadalajara, Jalisco" required />
+                  <span class="field-error-msg" id="err-ciudad"></span>
                 </div>
               </div>
 
               <div class="form-group">
-                <label class="form-label" for="direccionEnvio">Dirección Completa de Entrega (Calle, Número Ext/Int, Colonia, C.P.) *</label>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;">
+                  <label class="form-label" for="direccionEnvio" style="margin-bottom: 0;">Dirección Completa de Entrega (Calle, Número Ext/Int, Colonia, C.P.) *</label>
+                  <span class="sync-badge">📍 Sincronización en vivo con mapa</span>
+                </div>
                 <textarea id="direccionEnvio" class="form-textarea" rows="2" required placeholder="Ej. Av. del Parque 1234, Int 4B, Col. Bosques, C.P. 44100"></textarea>
+                <span class="field-error-msg" id="err-dir"></span>
+              </div>
+
+              <!-- Selector Interactivo de Mapa (API de Terceros 3: OpenStreetMap & Leaflet) -->
+              <div class="form-group" style="margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px dashed #cbd5e1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                  <label class="form-label" style="margin: 0; font-weight: 600; font-size: 0.88rem;">
+                    🗺️ Ubicación en Mapa o Retiro en Sucursal (OpenStreetMap & Leaflet)
+                  </label>
+                  <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-outline btn-xs branch-preset-btn" data-lat="20.7027" data-lng="-103.3892" data-name="Campus CETI Colomos, Calle Nueva Galicia 3000, Zapopan, Jal." style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">
+                      CETI Colomos
+                    </button>
+                    <button type="button" class="btn btn-outline btn-xs branch-preset-btn" data-lat="20.6765" data-lng="-103.3475" data-name="Librería Sucursal Centro, Av. Juárez 450, Guadalajara, Jal." style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">
+                      Sucursal Centro
+                    </button>
+                    <button type="button" class="btn btn-outline btn-xs branch-preset-btn" data-lat="20.7188" data-lng="-103.3815" data-name="Punto de Entrega Plaza Patria, Zapopan, Jal." style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">
+                      Plaza Patria
+                    </button>
+                  </div>
+                </div>
+
+                <div id="delivery-map" style="height: 220px; width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; z-index: 5;"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.35rem; font-size: 0.78rem; color: #64748b;">
+                  <span>Escribe tu dirección arriba o haz clic en el mapa para sincronizar la entrega (Nominatim Geocoding API).</span>
+                  <span id="map-status-msg" style="color: #0284c7; font-weight: 600;">Listo</span>
+                </div>
               </div>
             </div>
 
-            <!-- Sección 2: Pasarela Multimétodo Interactiva (Hugo - PaymentGateway Island) -->
+            <!-- Sección 2: Pasarela Multimétodo Interactiva (PaymentGateway Island) -->
             <div class="card form-section-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
               <PaymentGateway client:load />
             </div>
@@ -198,6 +236,7 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
     background: var(--color-surface);
     margin-bottom: var(--spacing-lg);
     border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
   }
 
   .section-title-row {
@@ -210,7 +249,7 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
   }
 
   .step-num {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 32px;
@@ -224,30 +263,25 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
   }
 
   .section-title-row h3 {
-    margin: 0 0 0.2rem 0;
-    font-size: 1.15rem;
+    margin: 0;
+    font-size: 1.2rem;
   }
 
   .section-desc {
-    margin: 0;
+    margin: 0.25rem 0 0 0;
     font-size: 0.85rem;
     color: var(--color-text-muted);
   }
 
   .form-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
-  }
-
-  .form-col {
-    flex: 1;
-    margin-bottom: 0 !important;
   }
 
   @media (max-width: 600px) {
     .form-row {
-      flex-direction: column;
+      grid-template-columns: 1fr;
     }
   }
 
@@ -257,27 +291,60 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
 
   .form-label {
     display: block;
-    margin-bottom: 0.4rem;
-    font-size: 0.88rem;
+    margin-bottom: 0.35rem;
     font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--color-text);
   }
 
   .form-input, .form-textarea {
     width: 100%;
     padding: 0.65rem 0.85rem;
-    border: 1px solid var(--color-border);
+    border: 1.5px solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-surface);
     color: var(--color-text);
     font-size: 0.95rem;
     box-sizing: border-box;
     font-family: inherit;
+    transition: all 0.2s ease;
   }
 
   .form-input:focus, .form-textarea:focus {
     outline: none;
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+
+  /* Estados de validación visual */
+  .form-input.is-invalid, .form-textarea.is-invalid {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+  }
+
+  .form-input.is-valid, .form-textarea.is-valid {
+    border-color: #22c55e !important;
+    background-color: #f0fdf4 !important;
+  }
+
+  .field-error-msg {
+    display: block;
+    font-size: 0.78rem;
+    color: #dc2626;
+    margin-top: 0.25rem;
+    min-height: 1rem;
+    font-weight: 500;
+  }
+
+  .sync-badge {
+    font-size: 0.72rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-weight: 600;
+    border: 1px solid #bae6fd;
   }
 
   .btn-block {
@@ -453,6 +520,19 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
   const shippingEl = document.getElementById('chk-shipping') as HTMLElement;
   const totalEl = document.getElementById('chk-total') as HTMLElement;
 
+  // Elementos de campos del formulario
+  const nombreInput = document.getElementById('nombreCliente') as HTMLInputElement;
+  const emailInput = document.getElementById('emailCliente') as HTMLInputElement;
+  const telInput = document.getElementById('telefonoCliente') as HTMLInputElement;
+  const ciudadInput = document.getElementById('ciudadCliente') as HTMLInputElement;
+  const dirInput = document.getElementById('direccionEnvio') as HTMLTextAreaElement;
+
+  const errNombre = document.getElementById('err-nombre') as HTMLElement;
+  const errEmail = document.getElementById('err-email') as HTMLElement;
+  const errTel = document.getElementById('err-tel') as HTMLElement;
+  const errCiudad = document.getElementById('err-ciudad') as HTMLElement;
+  const errDir = document.getElementById('err-dir') as HTMLElement;
+
   // 1. Verificación de Autenticación
   if (!authService.isAuthenticated()) {
     if (authBox) authBox.style.display = 'block';
@@ -473,16 +553,269 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
     // 3. Prellenar datos del usuario
     const user = authService.getUser();
     if (user) {
-      const nombreInput = document.getElementById('nombreCliente') as HTMLInputElement;
-      const emailInput = document.getElementById('emailCliente') as HTMLInputElement;
-      const telInput = document.getElementById('telefonoCliente') as HTMLInputElement;
-      const dirInput = document.getElementById('direccionEnvio') as HTMLTextAreaElement;
-
-      if (nombreInput) nombreInput.value = user.nombre || '';
-      if (emailInput) emailInput.value = user.email || '';
-      if (telInput && user.telefono) telInput.value = user.telefono;
-      if (dirInput && user.direccion) dirInput.value = user.direccion;
+      if (nombreInput && !nombreInput.value) nombreInput.value = user.nombre || '';
+      if (emailInput && !emailInput.value) emailInput.value = user.email || '';
+      if (telInput && user.telefono && !telInput.value) telInput.value = user.telefono;
+      if (dirInput && user.direccion && !dirInput.value) dirInput.value = user.direccion;
     }
+
+    // =========================================================================
+    // VALIDACIONES DE CAMPO ROBUSTAS
+    // =========================================================================
+    function validateNombre(): boolean {
+      if (!nombreInput) return true;
+      const val = nombreInput.value.trim();
+      const parts = val.split(/\s+/).filter(Boolean);
+      if (!val) {
+        setFieldError(nombreInput, errNombre, 'El nombre completo es obligatorio.');
+        return false;
+      }
+      if (val.length < 5 || parts.length < 2) {
+        setFieldError(nombreInput, errNombre, 'Ingresa tu nombre y apellido (al menos 2 palabras).');
+        return false;
+      }
+      setFieldValid(nombreInput, errNombre);
+      return true;
+    }
+
+    function validateEmail(): boolean {
+      if (!emailInput) return true;
+      const val = emailInput.value.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+      if (!val) {
+        setFieldError(emailInput, errEmail, 'El correo electrónico es obligatorio.');
+        return false;
+      }
+      if (!emailRegex.test(val)) {
+        setFieldError(emailInput, errEmail, 'Ingresa un correo electrónico válido (ej. usuario@ejemplo.com).');
+        return false;
+      }
+      setFieldValid(emailInput, errEmail);
+      return true;
+    }
+
+    function validateTel(): boolean {
+      if (!telInput) return true;
+      const val = telInput.value.trim();
+      if (!val) {
+        setFieldError(telInput, errTel, 'El teléfono de contacto es obligatorio.');
+        return false;
+      }
+      if (!/^\d{10}$/.test(val)) {
+        setFieldError(telInput, errTel, `Debe contener exactamente 10 dígitos numéricos (llevas ${val.length}).`);
+        return false;
+      }
+      setFieldValid(telInput, errTel);
+      return true;
+    }
+
+    function validateCiudad(): boolean {
+      if (!ciudadInput) return true;
+      const val = ciudadInput.value.trim();
+      if (!val || val.length < 3) {
+        setFieldError(ciudadInput, errCiudad, 'Ingresa tu ciudad y estado.');
+        return false;
+      }
+      setFieldValid(ciudadInput, errCiudad);
+      return true;
+    }
+
+    function validateDireccion(): boolean {
+      if (!dirInput) return true;
+      const val = dirInput.value.trim();
+      if (!val) {
+        setFieldError(dirInput, errDir, 'La dirección completa de entrega es obligatoria.');
+        return false;
+      }
+      if (val.length < 10) {
+        setFieldError(dirInput, errDir, `La dirección es muy corta (mínimo 10 caracteres, llevas ${val.length}).`);
+        return false;
+      }
+      // Verificar que contenga al menos un número (número de calle o C.P.)
+      const hasNumber = /\d+/.test(val);
+      if (!hasNumber) {
+        setFieldError(dirInput, errDir, 'Por favor incluye el número exterior o código postal para el envío.');
+        return false;
+      }
+      setFieldValid(dirInput, errDir);
+      return true;
+    }
+
+    function setFieldError(input: HTMLElement, errEl: HTMLElement | null, msg: string) {
+      input.classList.remove('is-valid');
+      input.classList.add('is-invalid');
+      if (errEl) errEl.textContent = msg;
+    }
+
+    function setFieldValid(input: HTMLElement, errEl: HTMLElement | null) {
+      input.classList.remove('is-invalid');
+      input.classList.add('is-valid');
+      if (errEl) errEl.textContent = '';
+    }
+
+    // Asignar listeners en tiempo real para validaciones
+    if (nombreInput) {
+      nombreInput.addEventListener('blur', validateNombre);
+      nombreInput.addEventListener('input', () => { if (nombreInput.classList.contains('is-invalid')) validateNombre(); });
+    }
+    if (emailInput) {
+      emailInput.addEventListener('blur', validateEmail);
+      emailInput.addEventListener('input', () => { if (emailInput.classList.contains('is-invalid')) validateEmail(); });
+    }
+    if (telInput) {
+      telInput.addEventListener('blur', validateTel);
+      telInput.addEventListener('input', () => {
+        telInput.value = telInput.value.replace(/\D/g, '').slice(0, 10);
+        if (telInput.classList.contains('is-invalid')) validateTel();
+      });
+    }
+    if (ciudadInput) {
+      ciudadInput.addEventListener('blur', validateCiudad);
+      ciudadInput.addEventListener('input', () => { if (ciudadInput.classList.contains('is-invalid')) validateCiudad(); });
+    }
+    if (dirInput) {
+      dirInput.addEventListener('blur', validateDireccion);
+    }
+
+    // =========================================================================
+    // 3.1 SINCRONIZACIÓN BIDIRECCIONAL: DIRECCIÓN <-> OPENSTREETMAP & LEAFLET
+    // =========================================================================
+    let isUpdatingFromMap = false;
+    let forwardGeocodeTimeout: any = null;
+
+    function initDeliveryMap() {
+      const mapContainer = document.getElementById('delivery-map');
+      if (!mapContainer || typeof (window as any).L === 'undefined') return;
+
+      const defaultCoords = [20.7027, -103.3892]; // CETI Colomos
+      const L = (window as any).L;
+      const map = L.map('delivery-map').setView(defaultCoords, 14);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+      }).addTo(map);
+
+      const marker = L.marker(defaultCoords, { draggable: true }).addTo(map);
+      marker.bindPopup('<strong>📍 Punto de Entrega: CETI Colomos</strong><br>Arrastra el marcador o escribe tu dirección arriba.').openPopup();
+
+      // Geocodificación Inversa: Del Mapa hacia el Cuadro de Texto
+      async function updateAddressFromCoords(lat: number, lng: number, labelOverride?: string) {
+        const statusMsg = document.getElementById('map-status-msg');
+
+        isUpdatingFromMap = true;
+        if (labelOverride) {
+          if (dirInput) dirInput.value = labelOverride;
+          marker.setLatLng([lat, lng]);
+          map.panTo([lat, lng]);
+          marker.bindPopup(`<strong>${labelOverride}</strong>`).openPopup();
+          if (statusMsg) statusMsg.textContent = '✅ Sucursal seleccionada';
+          validateDireccion();
+          setTimeout(() => { isUpdatingFromMap = false; }, 300);
+          return;
+        }
+
+        if (statusMsg) statusMsg.textContent = '🔄 Consultando OpenStreetMap Nominatim...';
+
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+          const data = await res.json();
+          if (data && data.display_name) {
+            if (dirInput) {
+              dirInput.value = data.display_name;
+              validateDireccion();
+            }
+            if (ciudadInput && data.address) {
+              const city = data.address.city || data.address.town || data.address.municipality || 'Guadalajara';
+              const state = data.address.state || 'Jalisco';
+              ciudadInput.value = `${city}, ${state}`;
+              validateCiudad();
+            }
+            marker.bindPopup(`<strong>📍 Ubicación detectada:</strong><br>${data.display_name.slice(0, 60)}...`).openPopup();
+            if (statusMsg) statusMsg.textContent = '✅ Ubicación sincronizada desde el mapa';
+          }
+        } catch (e) {
+          if (statusMsg) statusMsg.textContent = '📍 Marcador fijado en mapa';
+        } finally {
+          setTimeout(() => { isUpdatingFromMap = false; }, 400);
+        }
+      }
+
+      // Geocodificación Directa: Del Cuadro de Texto hacia el Mapa
+      async function searchAddressOnMap(query: string) {
+        if (isUpdatingFromMap) return;
+        const statusMsg = document.getElementById('map-status-msg');
+        if (statusMsg) statusMsg.textContent = '🔍 Buscando dirección en mapa...';
+
+        try {
+          const ciudad = ciudadInput ? ciudadInput.value.trim() : 'México';
+          const fullQuery = `${query}, ${ciudad}`;
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullQuery)}&limit=1&addressdetails=1`);
+          const results = await res.json();
+
+          if (results && results.length > 0) {
+            const hit = results[0];
+            const lat = parseFloat(hit.lat);
+            const lon = parseFloat(hit.lon);
+
+            map.flyTo([lat, lon], 15, { animate: true, duration: 1.2 });
+            marker.setLatLng([lat, lon]);
+            marker.bindPopup(`<strong>📍 Ubicación de Entrega:</strong><br>${hit.display_name.slice(0, 70)}...`).openPopup();
+            if (statusMsg) statusMsg.textContent = '✅ Ubicación encontrada en el mapa';
+          } else {
+            if (statusMsg) statusMsg.textContent = 'ℹ️ No localizada en mapa. Puedes ajustar el marcador arrastrándolo.';
+          }
+        } catch (err) {
+          if (statusMsg) statusMsg.textContent = 'ℹ️ Puedes fijar tu ubicación arrastrando el marcador.';
+        }
+      }
+
+      // Evento de escritura en el cuadro de texto de dirección (Debounced)
+      if (dirInput) {
+        dirInput.addEventListener('input', () => {
+          if (isUpdatingFromMap) return;
+          const val = dirInput.value.trim();
+
+          // Validar campo mientras escribe
+          if (dirInput.classList.contains('is-invalid')) {
+            validateDireccion();
+          }
+
+          // Si tiene formato válido y suficiente longitud, actualizar mapa
+          clearTimeout(forwardGeocodeTimeout);
+          if (val.length >= 10 && /\d+/.test(val)) {
+            forwardGeocodeTimeout = setTimeout(() => {
+              searchAddressOnMap(val);
+            }, 700);
+          }
+        });
+      }
+
+      // Eventos del mapa
+      map.on('click', (e: any) => {
+        marker.setLatLng(e.latlng);
+        updateAddressFromCoords(e.latlng.lat, e.latlng.lng);
+      });
+
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        updateAddressFromCoords(pos.lat, pos.lng);
+      });
+
+      // Botones de sucursales preestablecidas
+      document.querySelectorAll('.branch-preset-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const target = btn as HTMLElement;
+          const lat = parseFloat(target.dataset.lat || '20.7027');
+          const lng = parseFloat(target.dataset.lng || '-103.3892');
+          const name = target.dataset.name || 'Sucursal';
+          updateAddressFromCoords(lat, lng, name);
+        });
+      });
+    }
+
+    setTimeout(initDeliveryMap, 300);
 
     // 4. Renderizar desglose financiero de la orden
     if (itemsPreview) {
@@ -508,15 +841,19 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
       if (discountEl) discountEl.textContent = `-$${fin.discount.toFixed(2)} MXN`;
     }
 
-    // 5. Comunicación reactiva con la Pasarela Multimétodo (Hugo - PaymentGateway.jsx)
+    // 5. Comunicación reactiva con la Pasarela Multimétodo Unificada (PaymentGateway.jsx)
     let currentPaymentInfo: {
       metodoPago: string;
+      selectedMethod?: string;
+      digitalSubmethod?: string;
       detallesPago: string | null;
       referenciaPago: string | null;
       isCardValid?: boolean;
       cardError?: string | null;
     } = {
-      metodoPago: 'MERCADO_PAGO',
+      metodoPago: 'TARJETA_CREDITO',
+      selectedMethod: 'DIGITAL',
+      digitalSubmethod: 'MERCADO_PAGO',
       detallesPago: null,
       referenciaPago: null,
       isCardValid: true
@@ -526,6 +863,8 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
       if (e.detail) {
         currentPaymentInfo = {
           metodoPago: e.detail.metodoPago || 'TARJETA_CREDITO',
+          selectedMethod: e.detail.selectedMethod || 'DIGITAL',
+          digitalSubmethod: e.detail.digitalSubmethod || 'MERCADO_PAGO',
           detallesPago: e.detail.detallesPago || null,
           referenciaPago: e.detail.referenciaPago || null,
           isCardValid: e.detail.isCardValid !== undefined ? e.detail.isCardValid : true,
@@ -538,17 +877,15 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
           } else if (currentPaymentInfo.metodoPago === 'TRANSFERENCIA_SPEI') {
             submitBtnLabel.textContent = 'Confirmar Orden con SPEI';
           } else if (currentPaymentInfo.metodoPago === 'PAYPAL') {
-            submitBtnLabel.textContent = 'Pagar con PayPal';
-          } else if (currentPaymentInfo.metodoPago === 'MERCADO_PAGO') {
-            submitBtnLabel.textContent = 'Pagar con Mercado Pago (Card Token)';
+            submitBtnLabel.textContent = 'Pagar con PayPal Express';
           } else {
-            submitBtnLabel.textContent = 'Pagar con Tarjeta Bancaria';
+            submitBtnLabel.textContent = 'Pagar con Tarjeta (Mercado Pago / Mercado Libre)';
           }
         }
       }
     });
 
-    // 6. Enviar la orden de compra con GraphQL
+    // 6. Enviar la orden de compra con validación completa y GraphQL
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -566,56 +903,49 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
           return;
         }
 
-        // Validar datos de contacto y entrega
-        const nombreCliente = (document.getElementById('nombreCliente') as HTMLInputElement).value.trim();
-        const emailCliente = (document.getElementById('emailCliente') as HTMLInputElement).value.trim();
-        const telefonoClienteInput = document.getElementById('telefonoCliente') as HTMLInputElement;
-        const telefonoCliente = telefonoClienteInput ? telefonoClienteInput.value.trim() : '';
-        const direccionEnvio = (document.getElementById('direccionEnvio') as HTMLTextAreaElement).value.trim();
-        const ciudad = (document.getElementById('ciudadCliente') as HTMLInputElement).value.trim();
+        // Ejecutar todas las validaciones de campos de entrega
+        const isNombreOk = validateNombre();
+        const isEmailOk = validateEmail();
+        const isTelOk = validateTel();
+        const isCiudadOk = validateCiudad();
+        const isDirOk = validateDireccion();
 
-        if (!nombreCliente || !emailCliente || !direccionEnvio) {
-          const msg = 'Por favor completa todos los campos requeridos de envío y contacto.';
+        if (!isNombreOk || !isEmailOk || !isTelOk || !isCiudadOk || !isDirOk) {
+          const msg = 'Por favor corrige los campos marcados en rojo antes de continuar.';
           if (errorAlert) {
             errorAlert.textContent = msg;
             errorAlert.style.display = 'block';
           }
-          return;
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(emailCliente)) {
-          const msg = 'El correo electrónico ingresado no tiene un formato válido.';
-          if (errorAlert) {
-            errorAlert.textContent = msg;
-            errorAlert.style.display = 'block';
+          if ((window as any).showToast) (window as any).showToast(msg, 'error');
+          
+          // Enfocar el primer campo inválido
+          const firstInvalid = form.querySelector('.is-invalid') as HTMLElement;
+          if (firstInvalid) {
+            firstInvalid.focus();
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
           return;
         }
 
-        if (telefonoCliente && !/^\d{10}$/.test(telefonoCliente)) {
-          const msg = 'El teléfono de contacto debe tener exactamente 10 dígitos numéricos.';
-          if (errorAlert) {
-            errorAlert.textContent = msg;
-            errorAlert.style.display = 'block';
-          }
-          if (telefonoClienteInput) telefonoClienteInput.focus();
-          return;
-        }
+        const nombreCliente = nombreInput.value.trim();
+        const emailCliente = emailInput.value.trim();
+        const direccionEnvio = dirInput.value.trim();
+        const ciudad = ciudadInput.value.trim();
 
-        // Si el método es tarjeta bancaria o pasarela Mercado Pago, validar que los datos sean correctos (incluyendo Amex 15 dígitos y CID)
+        // Validar datos de tarjeta si se eligió la opción de tarjeta
         if (
-          currentPaymentInfo.metodoPago === 'TARJETA_CREDITO' ||
-          currentPaymentInfo.metodoPago === 'TARJETA_DEBITO' ||
-          currentPaymentInfo.metodoPago === 'MERCADO_PAGO'
+          currentPaymentInfo.selectedMethod === 'DIGITAL' &&
+          (currentPaymentInfo.digitalSubmethod === 'MERCADO_PAGO' || currentPaymentInfo.digitalSubmethod === 'CARD')
         ) {
           if (currentPaymentInfo.isCardValid === false) {
-            const msg = currentPaymentInfo.cardError || 'Por favor completa los datos de la tarjeta correctamente.';
+            const msg = currentPaymentInfo.cardError || 'Por favor completa los datos de la tarjeta bancaria correctamente.';
             if (errorAlert) {
               errorAlert.textContent = msg;
               errorAlert.style.display = 'block';
             }
-            window.scrollTo({ top: 300, behavior: 'smooth' });
+            if ((window as any).showToast) (window as any).showToast(msg, 'error');
+            const cardInput = document.getElementById('input-card-num-mp');
+            if (cardInput) cardInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
           }
         }
@@ -673,6 +1003,7 @@ const pageTitle = "Finalizar Compra (Checkout) — BiblioTech Store";
             if ((window as any).showToast) {
               (window as any).showToast('¡Pago aprobado y orden confirmada exitosamente!', 'success');
             }
+
             setTimeout(() => {
               const urlParams = new URLSearchParams({
                 folio: res.crearPedido.folio,

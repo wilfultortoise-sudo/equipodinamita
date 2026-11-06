@@ -1,0 +1,56 @@
+[
+  {
+    "id": "res-mvzo7zp5-ualb",
+    "productoId": "1",
+    "usuarioNombre": "Profesor Evaluador",
+    "calificacion": 5,
+    "comentario": "Excelente implementación de catálogo con reseñas almacenadas en MongoDB NoSQL.",
+    "fecha": "2026-11-02T19:47:42.329Z",
+    "verificado": true
+  },
+  {
+    "id": "res-mvznx6g3-czum",
+    "productoId": "1",
+    "usuarioNombre": "Profesor Evaluador",
+    "calificacion": 5,
+    "comentario": "Excelente implementación de catálogo con reseñas almacenadas en MongoDB NoSQL.",
+    "fecha": "2026-11-02T19:39:17.859Z",
+    "verificado": true
+  },
+  {
+    "id": "res-dune-01",
+    "productoId": "1",
+    "usuarioNombre": "Hugo E.",
+    "calificacion": 5,
+    "comentario": "Una obra maestra imprescindible de la ciencia ficción. La edición física de BiblioTech llegó impecable.",
+    "fecha": "2026-10-15T14:32:00.000Z",
+    "verificado": true
+  },
+  {
+    "id": "res-dune-02",
+    "productoId": "1",
+    "usuarioNombre": "Valeria R.",
+    "calificacion": 5,
+    "comentario": "Excelente construcción de mundo y desarrollo político en Arrakis. Lo leí en menos de una semana.",
+    "fecha": "2026-10-18T19:10:00.000Z",
+    "verificado": true
+  },
+  {
+    "id": "res-sol-01",
+    "productoId": "2",
+    "usuarioNombre": "Carlos M.",
+    "calificacion": 5,
+    "comentario": "El realismo mágico en su máxima expresión. Macondo y la familia Buendía quedan grabados en la memoria.",
+    "fecha": "2026-10-20T11:45:00.000Z",
+    "verificado": true
+  },
+  {
+    "id": "res-astro-01",
+    "productoId": "3",
+    "usuarioNombre": "Estudiante CETI",
+    "calificacion": 5,
+    "comentario": "La guía definitiva para construir sitios ultrarrápidos con Astro y React. Recomendadísimo para la materia.",
+    "fecha": "2026-10-25T16:20:00.000Z",
+    "verificado": true
+  }
+]

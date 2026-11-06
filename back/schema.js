@@ -146,7 +146,38 @@ export const typeDefs = `#graphql
     pedidosEntregados: Int!
   }
 
-  """Respuesta de autenticacion con token Bearer y datos del usuario"""
+  """Reseña y calificación de un libro almacenada en MongoDB NoSQL"""
+  type Resena {
+    id: ID!
+    productoId: ID!
+    usuarioNombre: String!
+    calificacion: Int!
+    comentario: String!
+    fecha: String!
+    verificado: Boolean
+  }
+
+  """Registro de auditoría del ciclo de vida del pedido almacenado en MongoDB NoSQL"""
+  type AuditoriaPedido {
+    id: ID!
+    pedidoFolio: String!
+    evento: String!
+    metodoPago: String
+    total: Float
+    detalles: String!
+    fecha: String!
+  }
+
+  """Estado de diagnóstico de bases de datos PostgreSQL y MongoDB"""
+  type DatabaseStatus {
+    relacionalMotor: String!
+    relacionalConectado: Boolean!
+    nosqlMotor: String!
+    nosqlModo: String!
+    nosqlConectado: Boolean!
+    nosqlColecciones: [String!]!
+  }
+
   type AuthPayload {
     token: String!
     usuario: Usuario!
@@ -155,6 +186,18 @@ export const typeDefs = `#graphql
   type Query {
     """Obtiene los indicadores principales del panel administrativo"""
     adminKPIs: AdminKPIs!
+
+    """Obtiene las reseñas de un libro almacenadas en la colección de MongoDB"""
+    resenasPorProducto(productoId: ID!): [Resena!]!
+
+    """Obtiene el historial de auditoría de un pedido almacenado en MongoDB NoSQL"""
+    auditoriaPedido(pedidoFolio: String!): [AuditoriaPedido!]!
+
+    """Obtiene el historial global de eventos de auditoría en MongoDB"""
+    todasAuditorias(limite: Int): [AuditoriaPedido!]!
+
+    """Diagnóstico de conectividad relacional (PostgreSQL) y NoSQL (MongoDB)"""
+    statusBasesDeDatos: DatabaseStatus!
 
     """Obtiene libros con filtros opcionales de categoria, busqueda y paginacion"""
     productos(categoriaId: ID, busqueda: String, limite: Int, desde: Int): [Producto!]!
@@ -211,6 +254,9 @@ export const typeDefs = `#graphql
 
     """Actualiza el estado de un pedido"""
     actualizarEstadoPedido(id: ID!, status: StatusPedido!): Pedido!
+
+    """Crea una reseña y calificación en la colección NoSQL de MongoDB"""
+    crearResena(productoId: ID!, usuarioNombre: String!, calificacion: Int!, comentario: String!): Resena!
   }
 
   type Subscription {

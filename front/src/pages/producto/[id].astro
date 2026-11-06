@@ -186,6 +186,61 @@ const pageTitle = `${book.titulo} — BiblioTech Store`;
 
       </div>
 
+      <!-- Sección de Reseñas de Lectores (Colección NoSQL: resenas en MongoDB) -->
+      <section class="reviews-nosql-section card" style="margin-bottom: var(--spacing-2xl); padding: 1.5rem; background: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem;">
+          <div>
+            <h2 style="margin: 0; font-size: 1.35rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span>Opiniones y Reseñas de Lectores</span>
+            </h2>
+            <span style="font-size: 0.8rem; color: #059669; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; margin-top: 0.2rem;">
+              🍃 Almacenado en Colección NoSQL MongoDB (resenas)
+            </span>
+          </div>
+          <button type="button" id="toggle-review-form-btn" class="btn btn-outline btn-sm" style="font-size: 0.85rem; padding: 0.4rem 0.85rem;">
+            ✍️ Escribir Reseña
+          </button>
+        </div>
+
+        <!-- Formulario para agregar Reseña (Mutation crearResena hacia MongoDB) -->
+        <div id="review-form-container" style="display: none; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem;">
+          <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem;">Deja tu reseña para este libro</h4>
+          <form id="new-review-form">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.75rem;">
+              <div>
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Tu Nombre *</label>
+                <input type="text" id="rev-nombre" required placeholder="Ej. Juan Pérez" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" />
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Calificación *</label>
+                <select id="rev-stars" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;">
+                  <option value="5">⭐⭐⭐⭐⭐ (5 de 5) - Excelente</option>
+                  <option value="4">⭐⭐⭐⭐ (4 de 5) - Muy Bueno</option>
+                  <option value="3">⭐⭐⭐ (3 de 5) - Bueno</option>
+                  <option value="2">⭐⭐ (2 de 5) - Regular</option>
+                  <option value="1">⭐ (1 de 5) - Malo</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-bottom: 0.75rem;">
+              <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Comentario de lectura *</label>
+              <textarea id="rev-comment" rows="3" required placeholder="Comparte qué te pareció la trama, edición o autor..." style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; box-sizing: border-box;"></textarea>
+            </div>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+              <button type="button" id="cancel-review-btn" class="btn btn-outline btn-sm">Cancelar</button>
+              <button type="submit" id="submit-review-btn" class="btn btn-primary btn-sm">Publicar en MongoDB</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Lista de Reseñas cargadas dinámicamente desde MongoDB -->
+        <div id="reviews-list-container" style="display: flex; flex-direction: column; gap: 0.85rem;">
+          <div style="text-align: center; color: #64748b; font-size: 0.9rem; padding: 1rem;">
+            Consultando colección NoSQL en MongoDB...
+          </div>
+        </div>
+      </section>
+
       <!-- Libros Relacionados -->
       {relatedBooks.length > 0 && (
         <section class="related-section">
@@ -671,6 +726,149 @@ const pageTitle = `${book.titulo} — BiblioTech Store`;
           if ((window as any).showToast) {
             (window as any).showToast(err.message, 'error');
           }
+        }
+      };
+    }
+
+    // ========================================================
+    // INTEGRACIÓN MONGODB NOSQL: RESEÑAS Y CALIFICACIONES
+    // ========================================================
+    const reviewsContainer = document.getElementById('reviews-list-container');
+    const toggleFormBtn = document.getElementById('toggle-review-form-btn');
+    const formContainer = document.getElementById('review-form-container');
+    const cancelFormBtn = document.getElementById('cancel-review-btn');
+    const reviewForm = document.getElementById('new-review-form') as HTMLFormElement;
+
+    if (toggleFormBtn && formContainer) {
+      toggleFormBtn.onclick = () => {
+        formContainer.style.display = formContainer.style.display === 'none' ? 'block' : 'none';
+      };
+    }
+
+    if (cancelFormBtn && formContainer) {
+      cancelFormBtn.onclick = () => {
+        formContainer.style.display = 'none';
+      };
+    }
+
+    async function loadReviews() {
+      if (!reviewsContainer) return;
+      try {
+        const res = await fetch('http://localhost:4000/graphql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `
+              query ObtenerResenas($productoId: ID!) {
+                resenasPorProducto(productoId: $productoId) {
+                  id
+                  usuarioNombre
+                  calificacion
+                  comentario
+                  fecha
+                  verificado
+                }
+              }
+            `,
+            variables: { productoId: bookId }
+          })
+        });
+
+        const data = await res.json();
+        const list = data?.data?.resenasPorProducto || [];
+
+        if (list.length === 0) {
+          reviewsContainer.innerHTML = `
+            <div style="text-align: center; padding: 1.5rem; color: #64748b; font-size: 0.9rem;">
+              Aún no hay reseñas para este libro en la base de datos MongoDB. ¡Sé el primero en compartir tu opinión!
+            </div>
+          `;
+          return;
+        }
+
+        reviewsContainer.innerHTML = list.map((r: any) => `
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.25rem;">
+              <div>
+                <strong style="color: #1e293b; font-size: 0.95rem;">${r.usuarioNombre}</strong>
+                <span style="color: #f59e0b; margin-left: 0.4rem; letter-spacing: 1px;">${'★'.repeat(r.calificacion)}${'☆'.repeat(5 - r.calificacion)}</span>
+              </div>
+              <span style="font-size: 0.78rem; color: #94a3b8;">${new Date(r.fecha).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+            </div>
+            <p style="margin: 0; color: #334155; font-size: 0.9rem; line-height: 1.5;">${r.comentario}</p>
+            <div style="margin-top: 0.35rem; display: flex; gap: 0.75rem; align-items: center; font-size: 0.72rem; color: #059669;">
+              <span>✓ Compra Verificada</span>
+              <span style="color: #94a3b8;">MongoDB ID: <code>${r.id}</code></span>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        reviewsContainer.innerHTML = `
+          <div style="color: #94a3b8; font-size: 0.85rem; text-align: center; padding: 1rem;">
+            No se pudieron conectar las reseñas con MongoDB en este momento.
+          </div>
+        `;
+      }
+    }
+
+    loadReviews();
+
+    if (reviewForm) {
+      reviewForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const nombre = (document.getElementById('rev-nombre') as HTMLInputElement).value.trim();
+        const calificacion = parseInt((document.getElementById('rev-stars') as HTMLSelectElement).value, 10);
+        const comentario = (document.getElementById('rev-comment') as HTMLTextAreaElement).value.trim();
+        const submitBtn = document.getElementById('submit-review-btn') as HTMLButtonElement;
+
+        if (!nombre || !comentario) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Guardando en MongoDB...';
+
+        try {
+          const res = await fetch('http://localhost:4000/graphql', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: `
+                mutation CrearResenaNoSQL($productoId: ID!, $nombre: String!, $calificacion: Int!, $comentario: String!) {
+                  crearResena(productoId: $productoId, usuarioNombre: $nombre, calificacion: $calificacion, comentario: $comentario) {
+                    id
+                    usuarioNombre
+                    calificacion
+                    comentario
+                    fecha
+                  }
+                }
+              `,
+              variables: {
+                productoId: bookId,
+                nombre,
+                calificacion,
+                comentario
+              }
+            })
+          });
+
+          const data = await res.json();
+          if (data?.data?.crearResena) {
+            if ((window as any).showToast) {
+              (window as any).showToast('¡Reseña guardada exitosamente en MongoDB NoSQL!', 'success');
+            }
+            reviewForm.reset();
+            if (formContainer) formContainer.style.display = 'none';
+            await loadReviews();
+          } else {
+            throw new Error(data.errors?.[0]?.message || 'Error al guardar');
+          }
+        } catch (err: any) {
+          if ((window as any).showToast) {
+            (window as any).showToast(`Error al guardar en MongoDB: ${err.message}`, 'error');
+          }
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Publicar en MongoDB';
         }
       };
     }
