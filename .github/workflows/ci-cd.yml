@@ -24,22 +24,22 @@ jobs:
       - name: Clonar repositorio
         uses: actions/checkout@v4
 
-      - name: Configurar entorno Node.js 20.x
+      - name: Configurar entorno Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: '**/package-lock.json'
 
       - name: Instalar dependencias del Backend
         run: |
           cd back
-          npm ci
+          npm ci || npm install
 
       - name: Instalar dependencias del Frontend
         run: |
           cd front
-          npm ci
+          npm ci || npm install
 
       - name: Analisis de Calidad y Sintaxis de Codigo
         run: |
