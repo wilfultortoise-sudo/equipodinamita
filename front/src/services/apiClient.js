@@ -2,6 +2,10 @@
 //Nomas debe ser como "Dame una operación GraphQL y sus variables, yo la mando al backend."
 
 
+import { executeCloudGraphQL, installCloudFetchFallback } from './cloudFallback.js';
+
+installCloudFetchFallback();
+
 const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:4000/';
 
 const request = async (query, variables = {}) => {
@@ -19,14 +23,20 @@ const token =                //Con esta línea buscamos el auth_token
     headers.Authorization = `Bearer ${token}`;  // si el auth_token es 'abc123', con esta línea lo convertimos a 'Authorization: Bearer abc123'
   }
 
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      query,
-      variables,
-    }),
-  });
+  let response;
+  try {
+    response = await fetch(API_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        query,
+        variables,
+      }),
+    });
+  } catch (networkErr) {
+    // Fallback automático para entorno Cloud/Netlify cuando localhost:4000 no es accesible
+    return executeCloudGraphQL(query, variables);
+  }
 // Esta línea es por si nos da error porque la sesión/token ya están vencidos. Si es así, borramos el token y mandamos pal login al usuario
  if (response.status === 401) {
   if (typeof localStorage !== 'undefined') {  //Esta linea de undefined es para que Astro no truene durante SSR 

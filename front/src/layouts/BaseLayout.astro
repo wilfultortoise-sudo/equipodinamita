@@ -49,5 +49,9 @@ const {pageTitle} = Astro.props; //Este es pa que el nombre de la página sea el
           };
         </script>
         <GeminiAssistantModal />
+        <script>
+          import { installCloudFetchFallback } from '../services/cloudFallback.js';
+          installCloudFetchFallback();
+        </script>
     </body>
 </html>

@@ -123,6 +123,8 @@ const { pageTitle } = Astro.props;
     </script>
 
     <script>
+      import { installCloudFetchFallback } from '../services/cloudFallback.js';
+      installCloudFetchFallback();
       import { authService } from '../services/auth.js';
 
       const shell = document.getElementById('admin-shell');
